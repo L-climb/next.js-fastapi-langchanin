@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Coding CLI 速查手册</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { 
+    font-family: 'Segoe UI', 'Microsoft YaHei', system-ui, sans-serif;
+    background: #0a0e14; color: #c9d1d9; line-height: 1.7;
+    min-height: 100vh; overflow-x: hidden;
+  }
+
+  /* === 背景动效 === */
+  body::before {
+    content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: 
+      radial-gradient(ellipse 600px 400px at 20% 20%, rgba(56,189,248,0.06), transparent),
+      radial-gradient(ellipse 500px 500px at 80% 80%, rgba(168,85,247,0.05), transparent),
+      radial-gradient(ellipse 400px 300px at 50% 50%, rgba(34,197,94,0.03), transparent);
+    pointer-events: none; z-index: 0;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 30px 24px 60px; position: relative; z-index: 1; }
+
+  /* === 顶栏 === */
+  .hero { text-align: center; padding: 40px 0 20px; }
+  .hero h1 { 
+    font-size: 2.6em; font-weight: 800; letter-spacing: -1px;
+    background: linear-gradient(135deg, #60a5fa, #c084fc, #f472b6, #34d399);
+    background-size: 300% 300%;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    animation: gradShift 8s ease infinite;
+  }
+  @keyframes gradShift {
+    0%,100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  .hero .sub { color: #6b7280; font-size: 0.95em; margin-top: 6px; letter-spacing: 0.5px; }
+  .hero .ver { display: inline-block; margin-top: 12px; padding: 4px 14px; border-radius: 20px; font-size: 0.75em; background: rgba(99,102,241,0.15); color: #818cf8; border: 1px solid rgba(99,102,241,0.25); }
+
+  /* === 搜索栏 === */
+  .search-wrap {
+    max-width: 480px; margin: 24px auto 28px; position: relative;
+  }
+  .search-wrap input {
+    width: 100%; padding: 12px 18px 12px 44px; border-radius: 14px;
+    border: 1px solid #2d3748; background: #111827; color: #e5e7eb;
+    font-size: 0.95em; outline: none; transition: all 0.3s;
+  }
+  .search-wrap input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+  .search-wrap input::placeholder { color: #4b5563; }
+  .search-wrap .search-icon {
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    font-size: 1.1em; color: #6b7280; pointer-events: none;
+  }
+  .search-wrap .clear-btn {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: #6b7280; cursor: pointer;
+    font-size: 1em; display: none; padding: 4px;
+  }
+  .search-wrap .clear-btn.show { display: block; }
+
+  /* === 标签栏 === */
+  .tabs {
+    display: flex; justify-content: center; gap: 6px;
+    margin-bottom: 28px; flex-wrap: wrap;
+  }
+  .tab-btn {
+    padding: 10px 28px; border: 1.5px solid #1e293b; border-radius: 12px;
+    background: rgba(17,24,39,0.8); color: #9ca3af; font-size: 0.92em;
+    cursor: pointer; transition: all 0.35s cubic-bezier(.4,0,.2,1);
+    font-weight: 600; letter-spacing: 0.3px; backdrop-filter: blur(8px);
+    position: relative; overflow: hidden;
+  }
+  .tab-btn::before {
+    content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity 0.35s;
+    border-radius: 12px;
+  }
+  .tab-btn:hover { border-color: #4b5563; color: #d1d5db; transform: translateY(-1px); }
+  .tab-btn.active {
+    transform: translateY(-2px); letter-spacing: 0.5px;
+  }
+  .tab-btn[data-tab="codex"].active {
+    border-color: #22c55e; color: #4ade80;
+    background: rgba(22,101,52,0.15);
+    box-shadow: 0 4px 20px rgba(34,197,94,0.12), inset 0 1px 0 rgba(34,197,94,0.1);
+  }
+  .tab-btn[data-tab="claude"].active {
+    border-color: #a855f7; color: #c084fc;
+    background: rgba(107,33,168,0.15);
+    box-shadow: 0 4px 20px rgba(168,85,247,0.12), inset 0 1px 0 rgba(168,85,247,0.1);
+  }
+  .tab-btn[data-tab="compare"].active {
+    border-color: #3b82f6; color: #60a5fa;
+    background: rgba(30,64,175,0.15);
+    box-shadow: 0 4px 20px rgba(59,130,246,0.12), inset 0 1px 0 rgba(59,130,246,0.1);
+  }
+
+  /* === 面板 === */
+  .panel { display: none; animation: fadeIn 0.4s ease; }
+  .panel.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* === 工具头 === */
+  .tool-header {
+    display: flex; align-items: center; gap: 20px; margin-bottom: 28px;
+    padding: 28px 28px; border-radius: 20px; position: relative; overflow: hidden;
+  }
+  .tool-header::after {
+    content: ''; position: absolute; top: -50%; right: -20%; width: 300px; height: 300px;
+    border-radius: 50%; opacity: 0.06; pointer-events: none;
+  }
+  .tool-header.codex-h {
+    background: linear-gradient(135deg, rgba(16,52,32,0.6), rgba(16,32,48,0.6));
+    border: 1px solid rgba(34,197,94,0.2);
+  }
+  .tool-header.codex-h::after { background: #22c55e; }
+  .tool-header.claude-h {
+    background: linear-gradient(135deg, rgba(48,24,64,0.6), rgba(64,24,24,0.6));
+    border: 1px solid rgba(168,85,247,0.2);
+  }
+  .tool-header.claude-h::after { background: #a855f7; }
+  .tool-header .icon { font-size: 2.8em; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); }
+  .tool-header .info h2 { font-size: 1.6em; font-weight: 800; letter-spacing: -0.5px; }
+  .tool-header.codex-h .info h2 { color: #4ade80; }
+  .tool-header.claude-h .info h2 { color: #c084fc; }
+  .tool-header .info p { color: #6b7280; font-size: 0.9em; margin-top: 4px; }
+
+  /* === 卡片 === */
+  .card {
+    margin-bottom: 18px; border-radius: 16px; overflow: hidden;
+    border: 1px solid #1e293b; background: rgba(17,24,39,0.7);
+    backdrop-filter: blur(12px); transition: all 0.3s;
+  }
+  .card:hover { border-color: #374151; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+  .card-head {
+    padding: 16px 22px; font-size: 1em; font-weight: 700;
+    border-bottom: 1px solid #1e293b; cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between;
+    transition: background 0.2s; user-select: none;
+  }
+  .card-head:hover { background: rgba(31,41,55,0.5); }
+  .card-head-left { display: flex; align-items: center; gap: 10px; }
+  .codex-panel .card-head { color: #4ade80; }
+  .claude-panel .card-head { color: #c084fc; }
+  .compare-panel .card-head { color: #60a5fa; }
+  .card-head .chevron {
+    transition: transform 0.3s; font-size: 0.8em; color: #6b7280;
+  }
+  .card.open .card-head .chevron { transform: rotate(180deg); }
+  .card-body { 
+    max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(.4,0,.2,1);
+  }
+  .card.open .card-body { max-height: 2000px; }
+
+  /* === 命令行 === */
+  .cmd-grid { padding: 14px 20px; }
+  .cmd-row {
+    display: grid; grid-template-columns: 1fr 2.2fr; gap: 14px;
+    padding: 11px 0; border-bottom: 1px solid rgba(31,41,55,0.5);
+    align-items: start;
+  }
+  .cmd-row:last-child { border-bottom: none; }
+  .cmd-row:hover { background: rgba(31,41,55,0.3); border-radius: 8px; }
+  
+  .cmd-cell { position: relative; }
+  .cmd {
+    font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    background: #0d1117; border: 1px solid #21262d; border-radius: 10px;
+    padding: 9px 36px 9px 14px; font-size: 0.84em; color: #e6edf3;
+    white-space: nowrap; overflow-x: auto; display: block;
+    transition: all 0.2s;
+  }
+  .cmd::-webkit-scrollbar { height: 4px; }
+  .cmd::-webkit-scrollbar-track { background: transparent; }
+  .cmd::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
+  .codex-panel .cmd { border-left: 3px solid #22c55e; }
+  .claude-panel .cmd { border-left: 3px solid #a855f7; }
+  .compare-panel .cmd { border-left: 3px solid #3b82f6; }
+  
+  .copy-btn {
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    background: #21262d; border: 1px solid #30363d; border-radius: 6px;
+    color: #8b949e; cursor: pointer; padding: 4px 8px; font-size: 0.72em;
+    opacity: 0; transition: all 0.2s; font-family: inherit;
+  }
+  .cmd-row:hover .copy-btn { opacity: 1; }
+  .copy-btn:hover { background: #30363d; color: #e6edf3; }
+  .copy-btn.copied { color: #4ade80; border-color: #4ade80; }
+  
+  .desc { color: #9ca3af; font-size: 0.9em; padding-top: 7px; line-height: 1.6; }
+  .tag {
+    display: inline-block; padding: 2px 9px; border-radius: 8px;
+    font-size: 0.75em; font-weight: 700; margin-right: 5px; vertical-align: middle;
+  }
+  .tag-new { background: rgba(34,197,94,0.12); color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
+  .tag-hot { background: rgba(251,146,60,0.12); color: #fb923c; border: 1px solid rgba(251,146,60,0.25); }
+  .tag-tip { background: rgba(59,130,246,0.12); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
+  .tag-warn { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+
+  /* === 表格 === */
+  .tbl { width: 100%; border-collapse: collapse; }
+  .tbl th {
+    text-align: left; padding: 11px 18px; font-size: 0.85em;
+    color: #6b7280; border-bottom: 1px solid #1e293b; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .tbl td { padding: 10px 18px; border-bottom: 1px solid rgba(31,41,55,0.4); font-size: 0.9em; }
+  .tbl tr:last-child td { border-bottom: none; }
+  .tbl tr:hover td { background: rgba(31,41,55,0.3); }
+  .tbl kbd {
+    background: #1e293b; border: 1px solid #374151; border-radius: 6px;
+    padding: 3px 10px; font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85em; color: #e5e7eb; box-shadow: 0 2px 0 #0f172a;
+    white-space: nowrap;
+  }
+  .mono {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.88em; color: #f59e0b;
+  }
+
+  /* === 对比专用 === */
+  .cmp-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    padding: 12px 0; border-bottom: 1px solid rgba(31,41,55,0.4);
+    align-items: start;
+  }
+  .cmp-row:last-child { border-bottom: none; }
+  .cmp-item {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .cmp-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 8px;
+  }
+  .cmp-dot-green { background: #4ade80; box-shadow: 0 0 8px rgba(34,197,94,0.3); }
+  .cmp-dot-purple { background: #c084fc; box-shadow: 0 0 8px rgba(168,85,247,0.3); }
+  .cmp-label { font-size: 0.8em; color: #6b7280; margin-bottom: 4px; }
+  .cmp-cmd { font-family: 'JetBrains Mono', monospace; font-size: 0.84em; color: #e5e7eb; }
+
+  /* === 提示框 === */
+  .tip-box {
+    margin: 20px 0; padding: 18px 22px; border-radius: 14px;
+    background: rgba(30,64,175,0.1); border: 1px solid rgba(59,130,246,0.2);
+    position: relative;
+  }
+  .tip-box::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: linear-gradient(180deg, #3b82f6, #6366f1); border-radius: 4px 0 0 4px;
+  }
+  .tip-box .tip-title { color: #60a5fa; font-weight: 800; font-size: 0.95em; margin-bottom: 6px; }
+  .tip-box p { color: #9ca3af; font-size: 0.9em; }
+
+  /* === 徽章 === */
+  .badge { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .badge-g { background: #4ade80; box-shadow: 0 0 6px rgba(34,197,94,0.4); }
+  .badge-p { background: #c084fc; box-shadow: 0 0 6px rgba(168,85,247,0.4); }
+
+  /* === 分隔 === */
+  .sep { height: 1px; background: linear-gradient(90deg, transparent, #374151, transparent); margin: 8px 0; }
+
+  /* === 无结果 === */
+  .no-result {
+    text-align: center; padding: 60px 20px; color: #4b5563; font-size: 1.1em;
+    display: none;
+  }
+  .no-result .big { font-size: 3em; margin-bottom: 12px; }
+  .no-result.show { display: block; }
+
+  /* === 回顶部 === */
+  .to-top {
+    position: fixed; bottom: 30px; right: 30px; width: 44px; height: 44px;
+    border-radius: 14px; background: rgba(31,41,55,0.9); border: 1px solid #374151;
+    color: #9ca3af; font-size: 1.2em; cursor: pointer; display: flex;
+    align-items: center; justify-content: center;
+    opacity: 0; transform: translateY(20px); transition: all 0.3s;
+    backdrop-filter: blur(12px); z-index: 100;
+  }
+  .to-top.show { opacity: 1; transform: translateY(0); }
+  .to-top:hover { background: #374151; color: #e5e7eb; }
+
+  /* === 打印 === */
+  @media print {
+    body { background: #fff; color: #111; }
+    .search-wrap, .tab-btn, .copy-btn, .to-top, .tabs { display: none !important; }
+    .panel { display: block !important; }
+    .card { break-inside: avoid; border-color: #ddd; background: #fff; }
+    .card-body { max-height: none !important; }
+    .cmd { background: #f5f5f5; color: #111; border-color: #ddd; }
+  }
+  @media (max-width: 768px) {
+    .container { padding: 16px 12px; }
+    .hero h1 { font-size: 1.8em; }
+    .cmd-row, .cmp-row { grid-template-columns: 1fr; gap: 6px; }
+    .tool-header { flex-direction: column; text-align: center; gap: 12px; padding: 20px; }
+    .tab-btn { padding: 8px 18px; font-size: 0.85em; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <h1>⚡ AI Coding CLI 速查手册</h1>
+    <div class="sub">OpenAI Codex CLI &amp; Anthropic Claude Code — 终端 AI 编程双剑</div>
+    <div class="ver">v2.0 · 2026-06-08 · 可搜索 · 可复制 · 可打印</div>
+  </div>
+
+  <!-- 搜索 -->
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="search" placeholder="搜索命令、关键词…  如: model, 管道, --full-auto" autocomplete="off">
+    <button class="clear-btn" id="clearBtn" onclick="clearSearch()">✕</button>
+  </div>
+
+  <!-- 标签 -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="codex" onclick="show('codex')">🟢 Codex CLI</button>
+    <button class="tab-btn" data-tab="claude" onclick="show('claude')">🟣 Claude Code</button>
+    <button class="tab-btn" data-tab="compare" onclick="show('compare')">🔵 对比速查</button>
+  </div>
+
+  <div class="no-result" id="noResult">
+    <div class="big">🔍</div>
+    没有匹配的命令，换个关键词试试？
+  </div>
+
+  <!-- ==================== CODEX ==================== -->
+  <div id="codex" class="panel active codex-panel">
+
+    <div class="tool-header codex-h">
+      <span class="icon">🤖</span>
+      <div class="info">
+        <h2>OpenAI Codex CLI</h2>
+        <p>OpenAI 官方终端 AI 编程助手 · 基于 o3 / codex-mini 系列模型 · 内置沙箱执行</p>
+      </div>
+    </div>
+
+    <div class="card open">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="card-head-left">📦 安装与启动</span><span class="chevron">▼</span>
+      </div>
+      <div class="card-body"><div class="cmd-grid">
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">npm install -g @openai/codex</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">全局安装 Codex CLI</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">codex</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">启动交互式 REPL 对话</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">codex "修复这个 bug"</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">直接执行一个任务后退出</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">codex --version</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">查看版本号</div></div>
+      </div></div>
+    </div>
+
+    <div class="card open">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="card-head-left">🎯 自动化模式 <span class="tag tag-hot">核心</span></span><span class="chevron">▼</span>
+      </div>
+      <div class="card-body"><div class="cmd-grid">
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">codex "任务描述"</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc"><span class="tag tag-tip">默认</span> 交互模式 — 每步操作前都询问确认</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">codex --full-auto "任务描述"</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc"><span class="tag tag-hot">全自动化</span> 自动批准所有读写+命令执行，无需确认</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">codex -a "任务描述"</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">等价于 --full-auto 的缩写</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">codex --suggest "任务描述"</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc"><span class="tag tag-new">只读</span> 建议模式 — 分析问题不执行修改</div></div>
+      </div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="card-head-left">🧠 模型与 Provider</span><span class="chevron">▼</span>
+      </div>
+      <div class="card-body"><div class="cmd-grid">
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">codex --model o3</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">使用 o3 推理模型（最强）</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">codex --model o4-mini</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">使用 o4-mini（速度快、性价比高）</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">codex --model codex-mini "任务"</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">使用 Codex 专用小模型（编码快）</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">codex --provider openai</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">指定 provider：openai / azure / ollama</div></div>
+      </div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="card-head-left">📁 工作目录与配置</span><span class="chevron">▼</span>
+      </div>
+      <div class="card-body"><div class="cmd-grid">
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">cd /项目路径 && codex</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">在项目目录启动，自动理解项目结构</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">codex --cd /其他路径</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">指定工作目录</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">codex --quiet</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">安静模式，减少输出</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">codex --history</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">查看历史对话</div></div>
+      </div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="card-head-left">⌨️ 交互快捷键</span><span class="chevron">▼</span>
+      </div>
+      <div class="card-body"><div style="padding:8px 12px;">
+        <table class="tbl">
+          <tr><th>快捷键</th><th>功能</th></tr>
+          <tr><td><kbd>Enter</kbd></td><td>发送消息</td></tr>
+          <tr><td><kbd>Shift</kbd>+<kbd>Enter</kbd></td><td>换行（多行输入）</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd></td><td>中断当前生成</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td><td>退出 Codex</td></tr>
+          <tr><td><kbd>y</kbd> / <kbd>n</kbd></td><td>在交互模式下批准 / 拒绝操作</td></tr>
+        </table>
+      </div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="card-head-left">📝 实用示例</span><span class="chevron">▼</span>
+      </div>
+      <div class="card-body"><div class="cmd-grid">
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">codex "重构 utils.py，提取公共函数"</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">代码重构</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">codex "给所有函数加 docstring"</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">自动补充文档</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">codex -a "运行测试并修复失败的用例"</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc"><span class="tag tag-hot">全自动</span> 修复测试</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">codex --suggest "分析安全漏洞"</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">只读安全扫描</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">codex "写一个 Express REST API + 测试"</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">从零创建项目</div></div>
+      </div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="card-head-left">⚙️ 环境变量与配置文件</span><span class="chevron">▼</span>
+      </div>
+      <div class="card-body"><div style="padding:8px 12px;">
+        <table class="tbl">
+          <tr><th>变量</th><th>说明</th></tr>
+          <tr><td class="mono">OPENAI_API_KEY</td><td>OpenAI API 密钥（必须设置）</td></tr>
+          <tr><td class="mono">CODEX_MODEL</td><td>默认模型（覆盖 --model）</td></tr>
+          <tr><td class="mono">CODEX_HOME</td><td>配置目录（默认 ~/.codex）</td></tr>
+          <tr><td class="mono">~/.codex/instructions.md</td><td>全局自定义指令文件</td></tr>
+        </table>
+      </div></div>
+    </div>
+
+    <div class="tip-box">
+      <div class="tip-title">💡 安全提示</div>
+      <p>--full-auto 模式会在沙箱中自动执行命令，但仍建议在版本控制的项目中使用。首次运行建议从默认交互模式开始。</p>
+    </div>
+  </div>
+
+  <!-- ==================== CLAUDE ==================== -->
+  <div id="claude" class="panel claude-panel">
+
+    <div class="tool-header claude-h">
+      <span class="icon">🔮</span>
+      <div class="info">
+        <h2>Anthropic Claude Code</h2>
+        <p>Anthropic 官方终端 AI 编程助手 · Claude Opus/Sonnet 系列 · MCP 工具扩展 · 管道模式</p>
+      </div>
+    </div>
+
+    <div class="card open">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="card-head-left">📦 安装与启动</span><span class="chevron">▼</span>
+      </div>
+      <div class="card-body"><div class="cmd-grid">
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">npm install -g @anthropic-ai/claude-code</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">全局安装 Claude Code</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">启动交互式 REPL</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude "修复这个 bug"</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">直接执行单次任务</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude --version</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">查看版本</div></div>
+      </div></div>
+    </div>
+
+    <div class="card open">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="card-head-left">🎯 权限模式 <span class="tag tag-hot">核心</span></span><span class="chevron">▼</span>
+      </div>
+      <div class="card-body"><div class="cmd-grid">
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc"><span class="tag tag-tip">默认</span> 交互模式 — 需手动批准文件修改和命令执行</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude --allowedTools Edit Write</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc"><span class="tag tag-new">白名单</span> 只自动批准指定工具</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude --dangerously-skip-permissions</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc"><span class="tag tag-warn">跳过全部权限</span> 全自动执行，慎用！</div></div>
+      </div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="card-head-left">🧠 模型与配置</span><span class="chevron">▼</span>
+      </div>
+      <div class="card-body"><div class="cmd-grid">
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude --model claude-sonnet-4-20250514</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">指定 Sonnet 模型（默认，速度快）</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude --model claude-opus-4-20250514</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">使用 Opus 最强模型（复杂任务）</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude --max-turns 20</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">限制自动执行轮数（防止失控）</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude config set model claude-sonnet-4-20250514</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">持久化默认模型配置</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude config list</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">查看所有配置项</div></div>
+      </div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="card-head-left">📂 上下文与记忆 <span class="tag tag-new">重要</span></span><span class="chevron">▼</span>
+      </div>
+      <div class="card-body"><div class="cmd-grid">
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">CLAUDE.md</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc"><span class="tag tag-new">项目级</span> 放项目根目录，自动加载（代码规范/架构/约定）</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">~/.claude/CLAUDE.md</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc"><span class="tag tag-tip">全局级</span> 所有项目通用的偏好设置</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude --append-system-prompt "你的额外指令"</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">追加系统提示词</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude --context-file notes.txt</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">注入额外上下文文件</div></div>
+      </div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="card-head-left">🔗 管道与脚本模式 <span class="tag tag-new">实用</span></span><span class="chevron">▼</span>
+      </div>
+      <div class="card-body"><div class="cmd-grid">
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">echo "问题" | claude -p</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc"><span class="tag tag-new">管道模式</span> stdin 输入 → stdout 输出</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude -p "总结这段代码" &lt; file.py</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">将文件内容作为输入分析</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">git diff | claude -p "审查代码改动"</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc"><span class="tag tag-hot">Code Review</span> 审查 Git diff</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude -p --output-format json "任务"</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">JSON 格式输出（方便脚本解析）</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude -p --output-format text "任务"</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">纯文本输出（无 Markdown）</div></div>
+      </div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="card-head-left">🔌 MCP 工具集成</span><span class="chevron">▼</span>
+      </div>
+      <div class="card-body"><div class="cmd-grid">
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude mcp serve</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">将 Claude Code 作为 MCP 服务器运行</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude mcp add &lt;name&gt; &lt;command&gt;</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">添加 MCP 工具服务器</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude mcp list</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">列出已注册的 MCP 工具</div></div>
+      </div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="card-head-left">⌨️ REPL 交互快捷键与斜杠命令</span><span class="chevron">▼</span>
+      </div>
+      <div class="card-body"><div style="padding:8px 12px;">
+        <table class="tbl">
+          <tr><th>快捷键 / 命令</th><th>功能</th></tr>
+          <tr><td><kbd>Enter</kbd></td><td>发送消息</td></tr>
+          <tr><td><kbd>Shift</kbd>+<kbd>Enter</kbd></td><td>换行</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>取消输入 / 中断生成</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd></td><td>中断当前生成</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td><td>退出</td></tr>
+          <tr><td><kbd>/</kbd></td><td>进入斜杠命令模式</td></tr>
+          <tr><td><kbd>/clear</kbd></td><td>清空对话上下文</td></tr>
+          <tr><td><kbd>/compact</kbd></td><td>压缩对话历史（节省 token 费用）</td></tr>
+          <tr><td><kbd>/cost</kbd></td><td>查看当前会话花费</td></tr>
+          <tr><td><kbd>/help</kbd></td><td>帮助信息</td></tr>
+          <tr><td><kbd>/model</kbd></td><td>切换模型</td></tr>
+          <tr><td><kbd>/memory</kbd></td><td>编辑 CLAUDE.md 记忆文件</td></tr>
+          <tr><td><kbd>/permissions</kbd></td><td>查看/修改权限设置</td></tr>
+          <tr><td><kbd>/quit</kbd></td><td>退出 Claude Code</td></tr>
+        </table>
+      </div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="card-head-left">📝 实用示例</span><span class="chevron">▼</span>
+      </div>
+      <div class="card-body"><div class="cmd-grid">
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude "解释 src/main.py 的逻辑"</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">代码理解</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude "重构 auth 模块，加 JWT 支持"</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">功能重构</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude "写单元测试覆盖 utils/ 目录"</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">生成测试</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">git diff | claude -p "审查这些改动"</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc"><span class="tag tag-hot">Code Review</span></div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude -p "生成 CHANGELOG" &lt; git.log</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">生成变更日志</div></div>
+        <div class="cmd-row"><div class="cmd-cell"><span class="cmd">claude "找到并修复内存泄漏"</span><button class="copy-btn" onclick="copyCmd(this)">复制</button></div><div class="desc">调试排查</div></div>
+      </div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="card-head-left">⚙️ 环境变量</span><span class="chevron">▼</span>
+      </div>
+      <div class="card-body"><div style="padding:8px 12px;">
+        <table class="tbl">
+          <tr><th>变量</th><th>说明</th></tr>
+          <tr><td class="mono">ANTHROPIC_API_KEY</td><td>Anthropic API 密钥（不使用 OAuth 时需要）</td></tr>
+          <tr><td class="mono">CLAUDE_MODEL</td><td>默认模型</td></tr>
+          <tr><td class="mono">CLAUDE_CODE_MAX_TURNS</td><td>最大自动轮数</td></tr>
+          <tr><td class="mono">CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC</td><td>禁用遥测数据上报</td></tr>
+        </table>
+      </div></div>
+    </div>
+
+    <div class="tip-box">
+      <div class="tip-title">💡 最佳实践</div>
+      <p>在项目根目录创建 <strong>CLAUDE.md</strong> 文件，写入项目约定、代码风格、测试要求等。Claude Code 每次启动自动加载，效果远优于临时提示。用 <kbd>/compact</kbd> 定期压缩对话可节省 token 开销。</p>
+    </div>
+  </div>
+
+  <!-- ==================== COMPARE ==================== -->
+  <div id="compare" class="panel compare-panel">
+
+    <div class="tool-header" style="background:linear-gradient(135deg,rgba(16,32,64,0.6),rgba(64,16,48,0.6));border:1px solid rgba(59,130,246,0.2);">
+      <span class="icon">⚡</span>
+      <div class="info">
+        <h2 style="color:#60a5fa;">Codex vs Claude Code 对比速查</h2>
+        <p>同为终端 AI 编程助手，快速了解核心差异与适用场景</p>
+      </div>
+    </div>
+
+    <div class="card open">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="card-head-left">📋 基础对比</span><span class="chevron">▼</span>
+      </div>
+      <div class="card-body"><div style="padding:8px 12px;">
+        <table class="tbl">
+          <tr><th style="width:18%">维度</th><th style="width:41%"><span class="badge badge-g"></span>Codex CLI</th><th style="width:41%"><span class="badge badge-p"></span>Claude Code</th></tr>
+          <tr><td>厂商</td><td>OpenAI</td><td>Anthropic</td></tr>
+          <tr><td>安装</td><td class="mono">@openai/codex</td><td class="mono">@anthropic-ai/claude-code</td></tr>
+          <tr><td>启动命令</td><td><kbd>codex</kbd></td><td><kbd>claude</kbd></td></tr>
+          <tr><td>默认模型</td><td>codex-mini / o3</td><td>Claude Sonnet 4</td></tr>
+          <tr><td>最强模型</td><td>o3</td><td>Claude Opus 4</td></tr>
+          <tr><td>认证方式</td><td>API Key / ChatGPT 登录</td><td>OAuth / API Key</td></tr>
+          <tr><td>MCP 支持</td><td>❌ 不支持</td><td>✅ 内置支持</td></tr>
+          <tr><td>管道模式</td><td>❌ 不支持</td><td>✅ <kbd>-p</kbd> 参数</td></tr>
+          <tr><td>沙箱执行</td><td>✅ 内置沙箱</td><td>❌ 直接执行</td></tr>
+          <tr><td>配置文件</td><td><span class="mono">~/.codex/instructions.md</span></td><td><span class="mono">CLAUDE.md</span>（项目/全局）</td></tr>
+        </table>
+      </div></div>
+    </div>
+
+    <div class="card open">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="card-head-left">⚡ 等价命令对照</span><span class="chevron">▼</span>
+      </div>
+      <div class="card-body"><div class="cmd-grid">
+        <div class="cmp-row">
+          <div class="cmp-item"><div class="cmp-dot cmp-dot-green"></div><div><div class="cmp-label">Codex</div><div class="cmp-cmd">codex "任务"</div></div></div>
+          <div class="cmp-item"><div class="cmp-dot cmp-dot-purple"></div><div><div class="cmp-label">Claude</div><div class="cmp-cmd">claude "任务"</div></div></div>
+        </div>
+        <div class="cmp-row">
+          <div class="cmp-item"><div class="cmp-dot cmp-dot-green"></div><div><div class="cmp-label">Codex 全自动</div><div class="cmp-cmd">codex --full-auto "任务"</div></div></div>
+          <div class="cmp-item"><div class="cmp-dot cmp-dot-purple"></div><div><div class="cmp-label">Claude 全自动</div><div class="cmp-cmd">claude --dangerously-skip-permissions "任务"</div></div></div>
+        </div>
+        <div class="cmp-row">
+          <div class="cmp-item"><div class="cmp-dot cmp-dot-green"></div><div><div class="cmp-label">Codex 只读</div><div class="cmp-cmd">codex --suggest "任务"</div></div></div>
+          <div class="cmp-item"><div class="cmp-dot cmp-dot-purple"></div><div><div class="cmp-label">Claude 默认</div><div class="cmp-cmd">claude "任务"（默认交互）</div></div></div>
+        </div>
+        <div class="cmp-row">
+          <div class="cmp-item"><div class="cmp-dot cmp-dot-green"></div><div><div class="cmp-label">Codex 指定模型</div><div class="cmp-cmd">codex --model o3 "任务"</div></div></div>
+          <div class="cmp-item"><div class="cmp-dot cmp-dot-purple"></div><div><div class="cmp-label">Claude 指定模型</div><div class="cmp-cmd">claude --model claude-opus-4-20250514 "任务"</div></div></div>
+        </div>
+        <div class="cmp-row">
+          <div class="cmp-item"><div class="cmp-dot cmp-dot-green"></div><div><div class="cmp-label">Codex 认证</div><div class="cmp-cmd">OPENAI_API_KEY=xxx codex</div></div></div>
+          <div class="cmp-item"><div class="cmp-dot cmp-dot-purple"></div><div><div class="cmp-label">Claude 认证</div><div class="cmp-cmd">ANTHROPIC_API_KEY=xxx claude</div></div></div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="card open">
+      <div class="card-head" onclick="toggleCard(this)">
+        <span class="card-head-left">🏁 场景推荐</span><span class="chevron">▼</span>
+      </div>
+      <div class="card-body"><div style="padding:8px 12px;">
+        <table class="tbl">
+          <tr><th>场景</th><th>推荐</th><th>原因</th></tr>
+          <tr><td>快速小修改</td><td style="color:#9ca3af">🟡 都行</td><td>两者都高效</td></tr>
+          <tr><td>大型重构</td><td style="color:#c084fc">🟣 Claude Code</td><td>上下文窗口更大，MCP 可扩展工具链</td></tr>
+          <tr><td>CI/CD 集成</td><td style="color:#c084fc">🟣 Claude Code</td><td>管道模式 <kbd>-p</kbd>，支持 JSON 输出</td></tr>
+          <tr><td>安全敏感项目</td><td style="color:#4ade80">🟢 Codex</td><td>内置沙箱隔离，代码不直接执行</td></tr>
+          <tr><td>代码审查</td><td style="color:#c084fc">🟣 Claude Code</td><td>git diff 管道天然契合</td></tr>
+          <tr><td>GPT 生态用户</td><td style="color:#4ade80">🟢 Codex</td><td>复用 OpenAI 账户和 API Key</td></tr>
+          <tr><td>自动化脚本</td><td style="color:#c084fc">🟣 Claude Code</td><td>JSON 输出 + --max-turns 控制</td></tr>
+        </table>
+      </div></div>
+    </div>
+
+    <div class="tip-box">
+      <div class="tip-title">💡 两者可以共存！</div>
+      <p>安装在同一台机器上互不冲突，不同项目按需选择。建议都在默认交互模式下先跑几轮熟悉，再逐步尝试自动化模式。两者都支持在项目根目录放置配置文件来定制行为。</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- 回顶部 -->
+<button class="to-top" id="toTop" onclick="window.scrollTo({top:0})">↑</button>
+
+<script>
+// 标签切换
+function show(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelector(`[data-tab="${id}"]`).classList.add('active');
+  clearSearch();
+}
+
+// 卡片折叠
+function toggleCard(el) {
+  el.parentElement.classList.toggle('open');
+}
+
+// 复制命令
+function copyCmd(btn) {
+  const cmd = btn.parentElement.querySelector('.cmd').textContent.replace(/^\$ /, '');
+  navigator.clipboard.writeText(cmd).then(() => {
+    btn.textContent = '✓ 已复制';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '复制'; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+// 搜索
+const searchInput = document.getElementById('search');
+const clearBtn = document.getElementById('clearBtn');
+const noResult = document.getElementById('noResult');
+
+searchInput.addEventListener('input', function() {
+  const q = this.value.toLowerCase().trim();
+  clearBtn.classList.toggle('show', q.length > 0);
+  if (!q) { showAll(); return; }
+  
+  let anyVisible = false;
+  document.querySelectorAll('.panel.active .card').forEach(card => {
+    const text = card.textContent.toLowerCase();
+    const match = text.includes(q);
+    card.style.display = match ? '' : 'none';
+    if (match) { card.classList.add('open'); anyVisible = true; }
+  });
+  noResult.classList.toggle('show', !anyVisible);
+});
+
+function clearSearch() {
+  searchInput.value = '';
+  clearBtn.classList.remove('show');
+  showAll();
+}
+
+function showAll() {
+  noResult.classList.remove('show');
+  document.querySelectorAll('.card').forEach(c => c.style.display = '');
+}
+
+// 快捷键 Ctrl+F 聚焦搜索
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+    e.preventDefault(); searchInput.focus();
+  }
+});
+
+// 回顶部按钮
+window.addEventListener('scroll', () => {
+  document.getElementById('toTop').classList.toggle('show', window.scrollY > 300);
+});
+</script>
+
+</body>
+</html>
