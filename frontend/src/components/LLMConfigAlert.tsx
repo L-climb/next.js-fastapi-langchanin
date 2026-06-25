@@ -10,9 +10,9 @@ interface LLMConfigAlertProps {
 
 export default function LLMConfigAlert({ message }: LLMConfigAlertProps) {
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+    <div className="clay-inset px-4 py-3 text-sm text-amber-800">
       <div className="flex items-start gap-2">
-        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
         <div>
           <p className="font-medium">{message || LLM_CONFIG_MESSAGE}</p>
           <p className="mt-1 text-amber-800/80">
@@ -20,7 +20,7 @@ export default function LLMConfigAlert({ message }: LLMConfigAlertProps) {
           </p>
           <Link
             href="/settings"
-            className="mt-2 inline-block font-medium text-indigo-600 hover:text-indigo-800"
+            className="mt-2 inline-block font-medium text-purple-500 hover:text-purple-700"
           >
             前往模型配置 →
           </Link>

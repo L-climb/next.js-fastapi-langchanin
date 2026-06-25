@@ -237,19 +237,19 @@ export default function CrawlPanel({ onCrawlComplete }: CrawlPanelProps) {
   const customSources = sources.filter((s) => !s.is_preset);
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className="clay-card">
       {/* 折叠头部 */}
       <button
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center justify-between p-5 text-left"
       >
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
-            <Rss className="h-5 w-5 text-blue-600" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50">
+            <Rss className="h-5 w-5 text-purple-500" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-gray-900">手动爬取</h3>
-            <p className="text-xs text-gray-500">
+            <h3 className="text-sm font-semibold text-[#5a4a42]">手动爬取</h3>
+            <p className="text-xs text-[#9a8a82]">
               {sources.length > 0
                 ? `已选 ${selectedIds.size} / ${sources.length} 个源`
                 : "加载中..."}
@@ -257,9 +257,9 @@ export default function CrawlPanel({ onCrawlComplete }: CrawlPanelProps) {
           </div>
         </div>
         {expanded ? (
-          <ChevronUp className="h-5 w-5 text-gray-400" />
+          <ChevronUp className="h-5 w-5 text-[#b0a098]" />
         ) : (
-          <ChevronDown className="h-5 w-5 text-gray-400" />
+          <ChevronDown className="h-5 w-5 text-[#b0a098]" />
         )}
       </button>
 
@@ -270,14 +270,14 @@ export default function CrawlPanel({ onCrawlComplete }: CrawlPanelProps) {
             <button
               onClick={selectAll}
               disabled={allSelected || loadingSources}
-              className="rounded-md px-3 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 disabled:opacity-40"
+              className="rounded-md px-3 py-1 text-xs font-medium text-[#7a6a62] transition-colors hover:bg-gray-100 disabled:opacity-40"
             >
               全选
             </button>
             <button
               onClick={selectNone}
               disabled={selectedIds.size === 0 || loadingSources}
-              className="rounded-md px-3 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 disabled:opacity-40"
+              className="rounded-md px-3 py-1 text-xs font-medium text-[#7a6a62] transition-colors hover:bg-gray-100 disabled:opacity-40"
             >
               全不选
             </button>
@@ -292,7 +292,7 @@ export default function CrawlPanel({ onCrawlComplete }: CrawlPanelProps) {
             <button
               onClick={loadSources}
               disabled={loadingSources}
-              className="ml-auto rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+              className="ml-auto rounded-md p-1 text-[#b0a098] transition-colors hover:bg-gray-100 hover:text-[#7a6a62]"
               title="刷新源列表"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${loadingSources ? "animate-spin" : ""}`} />
@@ -301,7 +301,7 @@ export default function CrawlPanel({ onCrawlComplete }: CrawlPanelProps) {
 
           {/* 添加自定义源表单 */}
           {showAddForm && (
-            <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50/50 p-4">
+            <div className="mt-3 clay-inset p-4">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-sm font-medium text-gray-700">添加 RSS 源</span>
                 <button
@@ -309,7 +309,7 @@ export default function CrawlPanel({ onCrawlComplete }: CrawlPanelProps) {
                     setShowAddForm(false);
                     setAddError(null);
                   }}
-                  className="rounded p-0.5 text-gray-400 hover:text-gray-600"
+                  className="rounded p-0.5 text-[#b0a098] hover:text-[#7a6a62]"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -320,14 +320,14 @@ export default function CrawlPanel({ onCrawlComplete }: CrawlPanelProps) {
                   placeholder="名称（如 OpenAI Blog）"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full clay-input px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                 />
                 <input
                   type="url"
                   placeholder="RSS Feed URL（https://...）"
                   value={newUrl}
                   onChange={(e) => setNewUrl(e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full clay-input px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                 />
                 <div className="flex items-center gap-2">
                   <input
@@ -335,12 +335,12 @@ export default function CrawlPanel({ onCrawlComplete }: CrawlPanelProps) {
                     placeholder="分类（默认 ai）"
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
-                    className="w-32 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    className="w-32 clay-input px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                   />
                   <button
                     onClick={handleAddSource}
                     disabled={addingSource}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 clay-btn bg-purple-400 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
                   >
                     <Plus className="h-4 w-4" />
                     {addingSource ? "添加中..." : "添加"}
@@ -361,14 +361,14 @@ export default function CrawlPanel({ onCrawlComplete }: CrawlPanelProps) {
             {/* 预设源 */}
             {presetSources.length > 0 && (
               <div>
-                <p className="mb-2 text-xs font-medium uppercase tracking-wider text-gray-400">
+                <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#b0a098]">
                   预设源
                 </p>
                 <div className="space-y-1">
                   {presetSources.map((source) => (
                     <label
                       key={source.id}
-                      className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-gray-50"
+                      className="flex cursor-pointer items-center gap-3 rounded-2xl px-3 py-2 transition-colors hover:bg-purple-50/50"
                     >
                       <input
                         type="checkbox"
@@ -376,10 +376,10 @@ export default function CrawlPanel({ onCrawlComplete }: CrawlPanelProps) {
                         onChange={() => toggleSource(source.id)}
                         className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <Globe className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                      <Globe className="h-4 w-4 flex-shrink-0 text-[#b0a098]" />
                       <div className="min-w-0 flex-1">
-                        <span className="text-sm text-gray-900">{source.name}</span>
-                        <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
+                        <span className="text-sm text-[#5a4a42]">{source.name}</span>
+                        <span className="ml-2 clay-badge bg-purple-50 px-1.5 py-0.5 text-xs text-purple-500">
                           {source.category}
                         </span>
                       </div>
@@ -392,14 +392,14 @@ export default function CrawlPanel({ onCrawlComplete }: CrawlPanelProps) {
             {/* 自定义源 */}
             {customSources.length > 0 && (
               <div>
-                <p className="mb-2 text-xs font-medium uppercase tracking-wider text-gray-400">
+                <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#b0a098]">
                   自定义源
                 </p>
                 <div className="space-y-1">
                   {customSources.map((source) => (
                     <label
                       key={source.id}
-                      className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-gray-50"
+                      className="flex cursor-pointer items-center gap-3 rounded-2xl px-3 py-2 transition-colors hover:bg-purple-50/50"
                     >
                       <input
                         type="checkbox"
@@ -409,8 +409,8 @@ export default function CrawlPanel({ onCrawlComplete }: CrawlPanelProps) {
                       />
                       <Globe className="h-4 w-4 flex-shrink-0 text-blue-400" />
                       <div className="min-w-0 flex-1">
-                        <span className="text-sm text-gray-900">{source.name}</span>
-                        <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
+                        <span className="text-sm text-[#5a4a42]">{source.name}</span>
+                        <span className="ml-2 clay-badge bg-purple-50 px-1.5 py-0.5 text-xs text-purple-500">
                           {source.category}
                         </span>
                       </div>
@@ -419,7 +419,7 @@ export default function CrawlPanel({ onCrawlComplete }: CrawlPanelProps) {
                           e.preventDefault();
                           handleDeleteSource(source.id);
                         }}
-                        className="flex-shrink-0 rounded p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                        className="flex-shrink-0 rounded p-1 text-[#b0a098] transition-colors hover:bg-red-50 hover:text-red-500"
                         title="删除"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -431,26 +431,26 @@ export default function CrawlPanel({ onCrawlComplete }: CrawlPanelProps) {
             )}
 
             {sources.length === 0 && !loadingSources && (
-              <p className="py-4 text-center text-sm text-gray-400">暂无 RSS 源，请添加</p>
+              <p className="py-4 text-center text-sm text-[#b0a098]">暂无 RSS 源，请添加</p>
             )}
           </div>
 
           {/* 主题过滤 */}
           <div className="mt-5 border-t border-gray-100 pt-4">
             <label className="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
-              <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <svg className="h-4 w-4 text-[#b0a098]" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6Z" />
               </svg>
               主题筛选
-              <span className="text-xs font-normal text-gray-400">（可选，留空则不过滤）</span>
+              <span className="text-xs font-normal text-[#b0a098]">（可选，留空则不过滤）</span>
             </label>
             <input
               type="text"
               placeholder="输入主题关键词，如 AI、篮球、量子计算..."
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+              className="w-full clay-input px-3 py-2 text-sm outline-none transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
             />
             {topic.trim() && (
               <p className="mt-1.5 text-xs text-blue-600">
@@ -462,7 +462,7 @@ export default function CrawlPanel({ onCrawlComplete }: CrawlPanelProps) {
           {/* 爬取参数 + 按钮 */}
           <div className="mt-4 flex items-center gap-4 border-t border-gray-100 pt-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">每源最多</span>
+              <span className="text-sm text-[#7a6a62]">每源最多</span>
               <input
                 type="number"
                 min={1}
@@ -472,14 +472,14 @@ export default function CrawlPanel({ onCrawlComplete }: CrawlPanelProps) {
                 onChange={(e) =>
                   setMaxCount(e.target.value === "" ? "" : Number(e.target.value))
                 }
-                className="w-20 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                className="w-20 clay-input px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
               />
-              <span className="text-sm text-gray-600">篇</span>
+              <span className="text-sm text-[#7a6a62]">篇</span>
             </div>
             <button
               onClick={handleCrawl}
               disabled={crawling || selectedIds.size === 0}
-              className="ml-auto inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="ml-auto inline-flex items-center gap-2 clay-btn bg-purple-400 px-6 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               <RefreshCw className={`h-4 w-4 ${crawling ? "animate-spin" : ""}`} />
               {crawling ? "爬取中..." : "开始爬取"}
@@ -488,7 +488,7 @@ export default function CrawlPanel({ onCrawlComplete }: CrawlPanelProps) {
 
           {/* 爬取进度 */}
           {(crawlProgress || crawlComplete || crawlError) && (
-            <div className="mt-4 rounded-lg border border-gray-100 bg-gray-50 p-4">
+            <div className="mt-4 clay-inset p-4">
               <div className="mb-2 flex items-center gap-2">
                 {crawlError ? (
                   <AlertCircle className="h-4 w-4 text-red-500" />
@@ -497,22 +497,22 @@ export default function CrawlPanel({ onCrawlComplete }: CrawlPanelProps) {
                 ) : (
                   <Wifi className="h-4 w-4 animate-pulse text-blue-500" />
                 )}
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm font-medium text-[#5a4a42]">
                   {crawlError ? "爬取出错" : crawlComplete ? "爬取完成" : "爬取进度"}
                 </span>
               </div>
 
               {crawlProgress && (
                 <div className="space-y-2">
-                  <p className="truncate text-sm text-gray-600">
-                    当前: <span className="font-medium text-gray-900">{crawlProgress.current}</span>
+                  <p className="truncate text-sm text-[#7a6a62]">
+                    当前: <span className="font-medium text-[#5a4a42]">{crawlProgress.current}</span>
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-[#9a8a82]">
                     已处理 {crawlProgress.processed} / {crawlProgress.total}
                   </p>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-purple-100">
                     <div
-                      className="h-full rounded-full bg-blue-500 transition-all duration-500"
+                      className="h-full rounded-full bg-purple-400 transition-all duration-500"
                       style={{
                         width: `${crawlProgress.total > 0 ? (crawlProgress.processed / crawlProgress.total) * 100 : 0}%`,
                       }}
@@ -522,17 +522,17 @@ export default function CrawlPanel({ onCrawlComplete }: CrawlPanelProps) {
               )}
 
               {crawlComplete && (
-                <div className="space-y-1 text-sm text-gray-600">
+                <div className="space-y-1 text-sm text-[#7a6a62]">
                   <p>
                     新增文章:{" "}
-                    <span className="font-semibold text-gray-900">
+                    <span className="font-semibold text-[#5a4a42]">
                       {crawlComplete.total_new}
                     </span>{" "}
                     篇
                   </p>
                   <p>
                     已生成摘要:{" "}
-                    <span className="font-semibold text-gray-900">
+                    <span className="font-semibold text-[#5a4a42]">
                       {crawlComplete.total_summarized}
                     </span>{" "}
                     篇

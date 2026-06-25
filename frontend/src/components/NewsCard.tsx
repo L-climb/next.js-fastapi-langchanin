@@ -23,9 +23,9 @@ interface NewsCardProps {
 }
 
 const statusConfig: Record<string, { label: string; color: string }> = {
-  crawled: { label: "已爬取", color: "bg-blue-100 text-blue-700" },
-  summarized: { label: "已摘要", color: "bg-green-100 text-green-700" },
-  failed: { label: "失败", color: "bg-red-100 text-red-700" },
+  crawled: { label: "已爬取", color: "bg-blue-50 text-blue-600" },
+  summarized: { label: "已摘要", color: "bg-green-50 text-green-600" },
+  failed: { label: "失败", color: "bg-pink-50 text-pink-600" },
 };
 
 function formatTime(dateStr: string | null): string {
@@ -72,13 +72,13 @@ export default function NewsCard({ article, onAddToKnowledgeBase, onDelete }: Ne
   };
 
   return (
-    <div className="group flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all hover:shadow-md">
+    <div className="group flex flex-col clay-card clay-card-hover p-6">
       <div className="flex-grow">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <span
-                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${status.color}`}>
+                className={`clay-badge ${status.color}`}>
                 <Tag className="mr-1 h-3 w-3" />
                 {status.label}
               </span>
@@ -86,10 +86,10 @@ export default function NewsCard({ article, onAddToKnowledgeBase, onDelete }: Ne
                 <span className="text-xs text-gray-500">{article.source}</span>
               )}
             </div>
-            <h3 className="line-clamp-2 text-base font-semibold text-gray-900">
+            <h3 className="line-clamp-2 text-base font-semibold text-[#5a4a42]">
               {article.title}
             </h3>
-            <div className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-400">
+            <div className="mt-1.5 flex items-center gap-1.5 text-xs text-[#b0a098]">
               <Clock className="h-3.5 w-3.5" />
               {formatTime(article.crawled_at)}
             </div>
@@ -99,7 +99,7 @@ export default function NewsCard({ article, onAddToKnowledgeBase, onDelete }: Ne
               href={article.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-shrink-0 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+              className="flex-shrink-0 rounded-lg p-1.5 text-[#b0a098] transition-colors hover:bg-gray-100 hover:text-[#7a6a62]"
               title="打开原文">
               <ExternalLink className="h-4 w-4" />
             </a>
@@ -107,7 +107,7 @@ export default function NewsCard({ article, onAddToKnowledgeBase, onDelete }: Ne
         </div>
 
         {article.summary && (
-          <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-gray-600">
+          <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-[#7a6a62]">
             {article.summary}
           </p>
         )}
@@ -120,8 +120,8 @@ export default function NewsCard({ article, onAddToKnowledgeBase, onDelete }: Ne
             </div>
             <ul className="mt-1.5 space-y-1">
               {article.summary_points.map((point, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                  <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-blue-400" />
+                <li key={i} className="flex items-start gap-2 text-sm text-[#7a6a62]">
+                  <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-purple-300" />
                   {point}
                 </li>
               ))}
@@ -130,19 +130,19 @@ export default function NewsCard({ article, onAddToKnowledgeBase, onDelete }: Ne
         )}
 
         {article.impact && (
-          <div className="mt-3 flex items-start gap-2 rounded-lg bg-amber-50 p-3">
-            <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
-            <p className="text-sm text-amber-800">{article.impact}</p>
+          <div className="mt-3 flex items-start gap-2 clay-inset p-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-400" />
+            <p className="text-sm text-amber-700">{article.impact}</p>
           </div>
         )}
       </div>
 
-      <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
+      <div className="mt-4 flex items-center justify-between pt-4">
         <div className="flex items-center gap-2">
           {article.content && (
             <button
               onClick={() => setExpanded(!expanded)}
-              className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 transition-colors hover:text-blue-800">
+              className="inline-flex items-center gap-1 text-xs font-medium text-purple-500 transition-colors hover:text-purple-700">
               <FileText className="h-3.5 w-3.5" />
               {expanded ? "收起全文" : "展开全文"}
               {expanded ? (
@@ -161,8 +161,8 @@ export default function NewsCard({ article, onAddToKnowledgeBase, onDelete }: Ne
               disabled={isDeleting}
               className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
                 confirmDelete
-                  ? "bg-red-100 text-red-700 hover:bg-red-200"
-                  : "bg-gray-50 text-gray-500 hover:bg-red-50 hover:text-red-600"
+                  ? "clay-btn bg-pink-200 text-pink-700"
+                  : "clay-btn bg-pink-50 text-pink-500 hover:bg-pink-100"
               } disabled:opacity-50`}
             >
               <Trash2 className="h-4 w-4" />
@@ -175,8 +175,8 @@ export default function NewsCard({ article, onAddToKnowledgeBase, onDelete }: Ne
             disabled={article.is_in_knowledge_base || isAdding}
             className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
               article.is_in_knowledge_base
-                ? "cursor-default bg-green-50 text-green-700"
-                : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                ? "cursor-default clay-btn bg-green-50 text-green-600"
+                : "clay-btn bg-purple-50 text-purple-600"
             }`}>
             {article.is_in_knowledge_base ? (
               <BookCheck className="h-4 w-4" />
@@ -193,7 +193,7 @@ export default function NewsCard({ article, onAddToKnowledgeBase, onDelete }: Ne
       </div>
 
       {expanded && article.content && (
-        <div className="mt-3 max-h-64 overflow-y-auto rounded-lg bg-gray-50 p-3 text-sm leading-relaxed text-gray-700">
+        <div className="mt-3 max-h-64 overflow-y-auto clay-inset p-4 text-sm leading-relaxed text-gray-700">
           {article.content}
         </div>
       )}

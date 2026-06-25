@@ -215,10 +215,10 @@ export default function HomePage() {
             <button
               key={p}
               onClick={() => handlePageChange(p)}
-              className={`min-w-[36px] rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              className={`min-w-[36px] ${
                 p === currentPage
-                  ? "bg-gray-900 text-white"
-                  : "text-gray-600 hover:bg-gray-100"
+                  ? "clay-badge bg-purple-100 text-purple-700"
+                  : "clay-badge text-gray-500 hover:bg-purple-50"
               }`}
             >
               {p}
@@ -241,23 +241,23 @@ export default function HomePage() {
       {/* ---- 顶部统计栏 ---- */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: "总计", value: stats?.total ?? 0, color: "bg-blue-50 text-blue-600" },
+          { label: "总计", value: stats?.total ?? 0, color: "bg-purple-50 text-purple-600" },
           { label: "已摘要", value: stats?.summarized ?? 0, color: "bg-green-50 text-green-600" },
           { label: "待处理", value: stats?.crawled ?? 0, color: "bg-amber-50 text-amber-600" },
-          { label: "失败", value: stats?.failed ?? 0, color: "bg-red-50 text-red-600" },
+          { label: "失败", value: stats?.failed ?? 0, color: "bg-pink-50 text-pink-600" },
         ].map((card) => (
           <div
             key={card.label}
-            className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
+            className="clay-card p-6"
           >
-            <p className="text-sm font-medium text-gray-500">{card.label}</p>
+            <p className="text-sm font-medium text-[#9a8a82]">{card.label}</p>
             <p className={`mt-1 text-2xl font-bold ${card.color}`}>{card.value}</p>
           </div>
         ))}
       </div>
 
       {/* ---- 搜索栏 ---- */}
-      <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="clay-card p-6">
         <SearchBar
           value={searchQuery}
           onChange={setSearchQuery}
@@ -275,16 +275,16 @@ export default function HomePage() {
       {/* ---- 文章列表工具栏 ---- */}
       {articles.length > 0 && !loading && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-[#9a8a82]">
             共 {stats?.total ?? 0} 篇文章
           </p>
           <button
             onClick={handleDeleteAll}
             disabled={deletingAll}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${
+            className={`clay-btn inline-flex items-center gap-1.5 disabled:opacity-50 ${
               confirmDeleteAll
-                ? "bg-red-600 text-white hover:bg-red-700"
-                : "border border-red-200 bg-white text-red-600 hover:bg-red-50"
+                ? "bg-pink-400 text-white"
+                : "text-pink-600"
             }`}
           >
             <Trash2 className="h-4 w-4" />
@@ -300,13 +300,13 @@ export default function HomePage() {
       {/* ---- 新闻卡片网格 ---- */}
       {loading && articles.length === 0 ? (
         <div className="flex items-center justify-center py-20">
-          <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
-          <span className="ml-3 text-sm text-gray-500">加载中...</span>
+          <RefreshCw className="h-6 w-6 animate-spin text-purple-300" />
+          <span className="ml-3 text-sm text-[#9a8a82]">加载中...</span>
         </div>
       ) : articles.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white py-20 text-center shadow-sm">
+        <div className="clay-card py-20 text-center">
           <WifiOff className="mx-auto h-10 w-10 text-gray-300" />
-          <p className="mt-3 text-sm text-gray-500">暂无新闻数据</p>
+          <p className="mt-3 text-sm text-[#9a8a82]">暂无新闻数据</p>
           <p className="mt-1 text-xs text-gray-400">点击「手动爬取」开始获取新闻</p>
         </div>
       ) : (

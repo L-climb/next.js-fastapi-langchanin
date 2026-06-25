@@ -85,31 +85,31 @@ export default function SettingsPage() {
   }
 
   if (error && !config) {
-    return <div className="text-red-500">错误: {error}</div>;
+    return <div className="text-pink-600">错误: {error}</div>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Settings className="h-6 w-6 text-gray-500" />
-        <h1 className="text-2xl font-bold text-gray-900">模型配置</h1>
+        <Settings className="h-6 w-6 text-[#9a8a82]" />
+        <h1 className="text-2xl font-bold text-[#5a4a42]">模型配置</h1>
       </div>
 
       {successMessage && (
-        <div className="rounded-md bg-green-50 p-4">
+        <div className="clay-badge bg-green-50 p-4">
           <div className="flex">
             <div className="ml-3">
-              <p className="text-sm font-medium text-green-800">{successMessage}</p>
+              <p className="text-sm font-medium text-green-600">{successMessage}</p>
             </div>
           </div>
         </div>
       )}
 
       {error && (
-         <div className="rounded-md bg-red-50 p-4">
+         <div className="clay-inset bg-pink-50 p-4">
           <div className="flex">
             <div className="ml-3">
-              <p className="text-sm font-medium text-red-800">{error}</p>
+              <p className="text-sm font-medium text-pink-600">{error}</p>
             </div>
           </div>
         </div>
@@ -117,18 +117,18 @@ export default function SettingsPage() {
 
       <form 
         onSubmit={handleSubmit}
-        className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-6"
+        className="clay-card p-6 space-y-6"
       >
         {/* Provider Select */}
         <div>
-          <label htmlFor="provider" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="provider" className="block text-sm font-medium text-[#6a5a52]">
             模型提供商
           </label>
           <select
             id="provider"
             value={config?.provider || ''}
             onChange={handleInputChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            className="clay-input mt-1 block w-full px-3 py-2 sm:text-sm"
           >
             {LLM_PROVIDERS.map((p) => (
               <option key={p.id} value={p.id}>
@@ -140,7 +140,7 @@ export default function SettingsPage() {
 
         {/* API Key */}
         <div>
-          <label htmlFor="api_key" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="api_key" className="block text-sm font-medium text-[#6a5a52]">
             API Key
           </label>
           <input
@@ -148,7 +148,7 @@ export default function SettingsPage() {
             id="api_key"
             value={config?.api_key || ''}
             onChange={handleInputChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            className="clay-input mt-1 block w-full px-3 py-2 sm:text-sm"
             placeholder={config?.provider === 'ollama' ? 'Ollama 无需 API Key' : '请输入你的 API Key'}
             disabled={config?.provider === 'ollama'}
           />
@@ -156,7 +156,7 @@ export default function SettingsPage() {
 
         {/* Base URL */}
         <div>
-          <label htmlFor="base_url" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="base_url" className="block text-sm font-medium text-[#6a5a52]">
             API Base URL
           </label>
           <input
@@ -164,16 +164,16 @@ export default function SettingsPage() {
             id="base_url"
             value={config?.base_url || ''}
             onChange={handleInputChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            className="clay-input mt-1 block w-full px-3 py-2 sm:text-sm"
             placeholder={config?.provider === 'siliconflow' ? 'https://api.siliconflow.cn/v1' : '例如: https://api.openai.com/v1'}
           />
-           {config?.provider === 'ollama' && <p className="mt-2 text-xs text-gray-500">Ollama 用户请填写 Ollama 服务的地址, 例如: http://localhost:11434/v1</p>}
-           {config?.provider === 'siliconflow' && <p className="mt-2 text-xs text-gray-500">硅基流动默认地址: https://api.siliconflow.cn/v1</p>}
+           {config?.provider === 'ollama' && <p className="mt-2 text-xs text-[#9a8a82]">Ollama 用户请填写 Ollama 服务的地址, 例如: http://localhost:11434/v1</p>}
+           {config?.provider === 'siliconflow' && <p className="mt-2 text-xs text-[#9a8a82]">硅基流动默认地址: https://api.siliconflow.cn/v1</p>}
         </div>
 
         {/* Chat Model */}
         <div>
-          <label htmlFor="chat_model" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="chat_model" className="block text-sm font-medium text-[#6a5a52]">
             聊天/摘要模型
           </label>
           <input
@@ -181,15 +181,15 @@ export default function SettingsPage() {
             id="chat_model"
             value={config?.chat_model || ''}
             onChange={handleInputChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            className="clay-input mt-1 block w-full px-3 py-2 sm:text-sm"
             placeholder={config?.provider === 'siliconflow' ? '例如: deepseek-ai/DeepSeek-V3' : '例如: gpt-4o-mini'}
           />
-          {config?.provider === 'siliconflow' && <p className="mt-2 text-xs text-gray-500">推荐: deepseek-ai/DeepSeek-V3、Qwen/Qwen2.5-7B-Instruct 等</p>}
+          {config?.provider === 'siliconflow' && <p className="mt-2 text-xs text-[#9a8a82]">推荐: deepseek-ai/DeepSeek-V3、Qwen/Qwen2.5-7B-Instruct 等</p>}
         </div>
 
         {/* Embedding Model */}
         <div>
-          <label htmlFor="embedding_model" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="embedding_model" className="block text-sm font-medium text-[#6a5a52]">
             Embedding 模型
           </label>
           <input
@@ -197,10 +197,10 @@ export default function SettingsPage() {
             id="embedding_model"
             value={config?.embedding_model || ''}
             onChange={handleInputChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            className="clay-input mt-1 block w-full px-3 py-2 sm:text-sm"
             placeholder={config?.provider === 'siliconflow' ? '例如: BAAI/bge-m3' : '例如: text-embedding-3-small (留空则使用默认)'}
           />
-          {config?.provider === 'siliconflow' && <p className="mt-2 text-xs text-gray-500">推荐: BAAI/bge-m3、BAAI/bge-large-zh-v1.5</p>}
+          {config?.provider === 'siliconflow' && <p className="mt-2 text-xs text-[#9a8a82]">推荐: BAAI/bge-m3、BAAI/bge-large-zh-v1.5</p>}
         </div>
 
         <div className="flex items-center justify-between">
@@ -208,7 +208,7 @@ export default function SettingsPage() {
             type="button"
             onClick={handleTest}
             disabled={isTesting || isSaving}
-            className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+            className="clay-btn inline-flex items-center gap-2 bg-amber-400 py-2 px-4 text-sm font-medium text-white disabled:opacity-50"
           >
             {isTesting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -221,7 +221,7 @@ export default function SettingsPage() {
           <button
             type="submit"
             disabled={isSaving || isTesting}
-            className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+            className="clay-btn inline-flex justify-center bg-purple-400 py-2 px-4 text-sm font-medium text-white disabled:opacity-50"
           >
             {isSaving ? '保存中...' : '保存配置'}
           </button>
@@ -229,18 +229,18 @@ export default function SettingsPage() {
 
         {/* 测试结果展示 */}
         {testResult && (
-          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
-            <p className="text-sm font-medium text-gray-700">测试结果</p>
+          <div className="clay-inset p-4 space-y-3">
+            <p className="text-sm font-medium text-[#6a5a52]">测试结果</p>
             <div className="space-y-2">
               <div className="flex items-start gap-2">
                 {testResult.chat.success ? (
                   <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
                 ) : (
-                  <XCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" />
+                  <XCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-pink-500" />
                 )}
                 <div>
-                  <p className="text-sm font-medium text-gray-700">聊天模型</p>
-                  <p className={`text-sm ${testResult.chat.success ? 'text-green-600' : 'text-red-600'}`}>
+                  <p className="text-sm font-medium text-[#6a5a52]">聊天模型</p>
+                  <p className={`text-sm ${testResult.chat.success ? 'text-green-600' : 'text-pink-600'}`}>
                     {testResult.chat.message}
                   </p>
                 </div>
@@ -249,11 +249,11 @@ export default function SettingsPage() {
                 {testResult.embedding.success ? (
                   <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-500" />
                 ) : (
-                  <XCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" />
+                  <XCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-pink-500" />
                 )}
                 <div>
-                  <p className="text-sm font-medium text-gray-700">Embedding 模型</p>
-                  <p className={`text-sm ${testResult.embedding.success ? 'text-green-600' : 'text-red-600'}`}>
+                  <p className="text-sm font-medium text-[#6a5a52]">Embedding 模型</p>
+                  <p className={`text-sm ${testResult.embedding.success ? 'text-green-600' : 'text-pink-600'}`}>
                     {testResult.embedding.message}
                   </p>
                 </div>

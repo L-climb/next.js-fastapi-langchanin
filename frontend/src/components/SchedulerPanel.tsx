@@ -56,50 +56,50 @@ export default function SchedulerPanel() {
   };
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className="clay-card">
       <button
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center justify-between p-4 text-left"
       >
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50">
-            <Clock className="h-5 w-5 text-purple-600" />
+            <Clock className="h-5 w-5 text-purple-500" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-gray-900">定时任务</h3>
-            <p className="text-xs text-gray-500">
+            <h3 className="text-sm font-semibold text-[#5a4a42]">定时任务</h3>
+            <p className="text-xs text-[#9a8a82]">
               {jobs.length > 0 ? `${jobs.length} 个任务运行中` : "暂无定时任务"}
             </p>
           </div>
         </div>
         {expanded ? (
-          <ChevronUp className="h-5 w-5 text-gray-400" />
+          <ChevronUp className="h-5 w-5 text-[#b0a098]" />
         ) : (
-          <ChevronDown className="h-5 w-5 text-gray-400" />
+          <ChevronDown className="h-5 w-5 text-[#b0a098]" />
         )}
       </button>
 
       {expanded && (
-        <div className="border-t border-gray-100 px-4 pb-4">
+        <div className="px-4 pb-4 pt-4">
           {/* 创建新任务 */}
           <div className="mt-4 flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <Play className="h-4 w-4 text-gray-400" />
-              <span className="text-sm text-gray-600">每隔</span>
+              <Play className="h-4 w-4 text-[#b0a098]" />
+              <span className="text-sm text-[#7a6a62]">每隔</span>
               <input
                 type="number"
                 min={5}
                 max={1440}
                 value={interval}
                 onChange={(e) => setInterval(Number(e.target.value))}
-                className="w-20 rounded-lg border border-gray-200 px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                className="w-20 clay-input px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
               />
-              <span className="text-sm text-gray-600">分钟</span>
+              <span className="text-sm text-[#7a6a62]">分钟</span>
             </div>
             <button
               onClick={handleCreate}
               disabled={creating}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-purple-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 clay-btn bg-purple-400 px-4 py-1.5 text-sm font-medium text-white disabled:opacity-50"
             >
               <Plus className="h-4 w-4" />
               {creating ? "创建中..." : "添加"}
@@ -107,7 +107,7 @@ export default function SchedulerPanel() {
             <button
               onClick={loadJobs}
               disabled={loading}
-              className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+              className="rounded-full p-1.5 text-[#b0a098] transition-colors hover:bg-purple-50 hover:text-purple-500"
               title="刷新"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -117,16 +117,16 @@ export default function SchedulerPanel() {
           {/* 任务列表 */}
           <div className="mt-4 space-y-2">
             {jobs.length === 0 && !loading && (
-              <p className="py-4 text-center text-sm text-gray-400">暂无定时任务，请添加</p>
+              <p className="py-4 text-center text-sm text-[#b0a098]">暂无定时任务，请添加</p>
             )}
             {jobs.map((job) => (
               <div
                 key={job.id}
-                className="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3"
+                className="flex items-center justify-between clay-inset px-4 py-3"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-gray-900">{job.name}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="truncate text-sm font-medium text-[#5a4a42]">{job.name}</p>
+                  <p className="text-xs text-[#9a8a82]">
                     {job.trigger}
                     {job.next_run_time &&
                       ` · 下次执行: ${new Date(job.next_run_time).toLocaleString("zh-CN")}`}
@@ -134,7 +134,7 @@ export default function SchedulerPanel() {
                 </div>
                 <button
                   onClick={() => handleDelete(job.id)}
-                  className="ml-3 rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                  className="ml-3 rounded-lg p-1.5 text-[#b0a098] transition-colors hover:bg-pink-50 hover:text-pink-500"
                   title="删除任务"
                 >
                   <Trash2 className="h-4 w-4" />
