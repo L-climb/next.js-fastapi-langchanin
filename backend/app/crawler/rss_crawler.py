@@ -80,16 +80,29 @@ async def crawl_all_sources() -> list[dict]:
     Returns:
         所有源的文章汇总列表
     """
-    logger.info(f"开始爬取 {len(NEWS_SOURCES)} 个新闻源...")
+    return await crawl_selected_sources(NEWS_SOURCES)
+
+
+async def crawl_selected_sources(sources: list[dict]) -> list[dict]:
+    """
+    并发爬取指定的新闻源列表
+
+    Args:
+        sources: 源列表，每个源包含 {name, rss, category} 或 {name, rss, source_name}
+
+    Returns:
+        所有源的文章汇总列表
+    """
+    logger.info(f"开始爬取 {len(sources)} 个新闻源...")
 
     # 使用 asyncio.gather 并发爬取所有源
-    tasks = [crawl_source(source) for source in NEWS_SOURCES]
+    tasks = [crawl_source(source) for source in sources]
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     all_articles = []
     for i, result in enumerate(results):
         if isinstance(result, Exception):
-            logger.error(f"爬取 {NEWS_SOURCES[i]['name']} 异常: {result}")
+            logger.error(f"爬取 {sources[i]['name']} 异常: {result}")
         elif isinstance(result, list):
             all_articles.extend(result)
 

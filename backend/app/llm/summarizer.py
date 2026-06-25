@@ -118,3 +118,97 @@ async def answer_question(question: str, context_docs: list[str]) -> str:
     except Exception as e:
         logger.error(f"RAG 问答失败: {e}")
         raise wrap_llm_error(e, model_type="chat") from e
+
+
+# ==================== 主题过滤 ====================
+
+TOPIC_FILTER_PROMPT = ChatPromptTemplate.from_messages([
+    ("system", """你是一个文章主题分类专家。请判断以下每篇文章的标题是否与用户指定的主题相关。
+
+规则：
+1. 只根据标题判断相关性，不要编造内容
+2. 主题相关包括：直接提到主题关键词、属于该主题的子领域、与主题有密切关联
+3. 返回严格的 JSON 格式，不要包含其他文字
+
+请严格按照以下 JSON 格式返回：
+{{"results": [{{"index": 0, "relevant": true}}, {{"index": 1, "relevant": false}}]}}"""),
+    ("human", "目标主题：{topic}\n\n以下是文章标题列表：\n{titles}\n\n请逐一判断每篇文章是否与「{topic}」主题相关，返回 JSON 结果。"),
+])
+
+
+async def filter_articles_by_topic(articles: list[dict], topic: str) -> list[dict]:
+    """
+    使用 LLM 批量判断文章是否与指定主题相关
+
+    Args:
+        articles: 文章列表 [{title, url, source_name, ...}]
+        topic: 目标主题（如 "AI"、"篮球"）
+
+    Returns:
+        过滤后的相关文章列表
+    """
+    if not topic or not topic.strip():
+        return articles
+
+    if not articles:
+        return []
+
+    topic = topic.strip()
+    logger.info(f"正在按主题「{topic}」过滤 {len(articles)} 篇文章...")
+
+    try:
+        config = await get_llm_config_from_db()
+        llm = get_chat_model(config)
+        parser = JsonOutputParser()
+
+        # 分批处理，每批最多 50 篇，避免 token 超限
+        batch_size = 50
+        relevant_articles = []
+
+        for batch_start in range(0, len(articles), batch_size):
+            batch = articles[batch_start:batch_start + batch_size]
+            titles_text = "\n".join(
+                f"{i}. {a['title']}" for i, a in enumerate(batch)
+            )
+
+            chain = TOPIC_FILTER_PROMPT | llm | parser
+            result = await chain.ainvoke({"topic": topic, "titles": titles_text})
+
+            results_list = result.get("results", [])
+            for item in results_list:
+                idx = item.get("index", -1)
+                if item.get("relevant", False) and 0 <= idx < len(batch):
+                    relevant_articles.append(batch[idx])
+
+        logger.info(
+            f"主题过滤完成：{len(relevant_articles)}/{len(articles)} 篇与「{topic}」相关"
+        )
+        return relevant_articles
+
+    except LLMServiceError:
+        raise
+    except Exception as e:
+        # LLM 过滤失败时降级为关键词匹配
+        logger.warning(f"LLM 主题过滤失败，降级为关键词匹配: {e}")
+        return _keyword_filter(articles, topic)
+
+
+def _keyword_filter(articles: list[dict], topic: str) -> list[dict]:
+    """
+    关键词匹配降级方案：标题中包含主题关键词即视为相关
+    """
+    topic_lower = topic.lower()
+    # 拆分多个关键词（支持中英文逗号、空格分隔）
+    import re
+    keywords = [kw.strip().lower() for kw in re.split(r"[,，\s]+", topic_lower) if kw.strip()]
+    if not keywords:
+        return articles
+
+    filtered = []
+    for article in articles:
+        title_lower = article["title"].lower()
+        if any(kw in title_lower for kw in keywords):
+            filtered.append(article)
+
+    logger.info(f"关键词过滤结果：{len(filtered)}/{len(articles)} 篇匹配")
+    return filtered

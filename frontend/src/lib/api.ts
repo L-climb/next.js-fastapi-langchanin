@@ -69,6 +69,20 @@ export interface LLMConfig {
   embedding_model: string | null;
 }
 
+export interface CrawlSource {
+  id: number;
+  name: string;
+  url: string;
+  category: string;
+  is_preset: boolean;
+}
+
+export interface CrawlParams {
+  source_ids?: number[];
+  max_count?: number;
+  topic?: string;
+}
+
 export async function fetchArticles(
   page = 1,
   size = 20,
@@ -116,8 +130,41 @@ export async function addArticleToKnowledgeBase(
   return res.json();
 }
 
-export async function triggerCrawl(): Promise<{ message: string }> {
-  const res = await fetch(`${API_BASE}/api/articles/crawl`, { method: "POST" });
+export async function deleteArticle(
+  articleId: number
+): Promise<{ message: string }> {
+  const res = await fetch(`${API_BASE}/api/articles/${articleId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    if (res.status === 404) throw new Error("文章不存在");
+    throw new Error("删除文章失败");
+  }
+  return res.json();
+}
+
+export async function deleteAllArticles(): Promise<{
+  message: string;
+  deleted: number;
+}> {
+  const res = await fetch(`${API_BASE}/api/articles`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("清空文章失败");
+  return res.json();
+}
+
+export async function triggerCrawl(params?: CrawlParams): Promise<{ message: string }> {
+  const hasBody = params && (params.source_ids || params.max_count);
+  const res = await fetch(`${API_BASE}/api/articles/crawl`, {
+    method: "POST",
+    ...(hasBody
+      ? {
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(params),
+        }
+      : {}),
+  });
   if (!res.ok) throw new Error("触发爬取失败");
   return res.json();
 }
@@ -181,6 +228,59 @@ export async function fetchKnowledgeStats(): Promise<KnowledgeStats> {
   return res.json();
 }
 
+// ==================== 知识库文档列表 & 详情 ====================
+
+export interface KnowledgeDocumentItem {
+  article_id: number | null;
+  title: string;
+  doc_id: string;
+}
+
+export interface KnowledgeDocumentListResponse {
+  items: KnowledgeDocumentItem[];
+  total: number;
+  page: number;
+  size: number;
+  pages: number;
+}
+
+export interface DocumentChunk {
+  chunk_type: string;
+  content: string;
+}
+
+export interface KnowledgeDocumentDetail {
+  article_id: number | null;
+  title: string;
+  doc_id: string;
+  document: string;
+  chunks: DocumentChunk[];
+}
+
+export async function fetchKnowledgeDocuments(
+  page = 1,
+  size = 20
+): Promise<KnowledgeDocumentListResponse> {
+  const params = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+  });
+  const res = await fetch(`${API_BASE}/api/knowledge/documents?${params}`);
+  if (!res.ok) throw new Error("获取知识库文档列表失败");
+  return res.json();
+}
+
+export async function fetchKnowledgeDocument(
+  articleId: number
+): Promise<KnowledgeDocumentDetail> {
+  const res = await fetch(`${API_BASE}/api/knowledge/documents/${articleId}`);
+  if (!res.ok) {
+    if (res.status === 404) throw new Error("文档不存在");
+    throw new Error("获取文档详情失败");
+  }
+  return res.json();
+}
+
 export async function fetchSchedulerJobs(): Promise<SchedulerJob[]> {
   const res = await fetch(`${API_BASE}/api/scheduler/jobs`);
   if (!res.ok) throw new Error("获取任务列表失败");
@@ -223,6 +323,61 @@ export async function updateLLMConfig(config: LLMConfig): Promise<LLMConfig> {
     throw new Error(errorData.detail || "更新 LLM 配置失败");
   }
   return res.json();
+}
+
+export interface TestResult {
+  success: boolean;
+  message: string;
+}
+
+export interface TestLLMResponse {
+  chat: TestResult;
+  embedding: TestResult;
+}
+
+export async function testLLMConfig(): Promise<TestLLMResponse> {
+  const res = await fetch(`${API_BASE}/api/config/llm/test`, {
+    method: "POST",
+  });
+  if (!res.ok) {
+    throw new Error("测试连通性失败");
+  }
+  return res.json();
+}
+
+// ==================== RSS 源管理 ====================
+
+export async function fetchSources(): Promise<CrawlSource[]> {
+  const res = await fetch(`${API_BASE}/api/sources`);
+  if (!res.ok) throw new Error("获取源列表失败");
+  return res.json();
+}
+
+export async function createSource(source: {
+  name: string;
+  url: string;
+  category?: string;
+}): Promise<CrawlSource> {
+  const res = await fetch(`${API_BASE}/api/sources`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(source),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "添加源失败");
+  }
+  return res.json();
+}
+
+export async function deleteSource(id: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/sources/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "删除源失败");
+  }
 }
 
 export function createCrawlWebSocket(

@@ -12,12 +12,14 @@ import {
   AlertTriangle,
   BookPlus,
   BookCheck,
+  Trash2,
 } from "lucide-react";
 import type { Article } from "@/lib/api";
 
 interface NewsCardProps {
   article: Article;
   onAddToKnowledgeBase: (articleId: number) => void;
+  onDelete?: (articleId: number) => void;
 }
 
 const statusConfig: Record<string, { label: string; color: string }> = {
@@ -37,9 +39,11 @@ function formatTime(dateStr: string | null): string {
   });
 }
 
-export default function NewsCard({ article, onAddToKnowledgeBase }: NewsCardProps) {
+export default function NewsCard({ article, onAddToKnowledgeBase, onDelete }: NewsCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const status = statusConfig[article.status] || statusConfig.crawled;
 
   const handleAdd = async () => {
@@ -49,6 +53,21 @@ export default function NewsCard({ article, onAddToKnowledgeBase }: NewsCardProp
       await onAddToKnowledgeBase(article.id);
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!onDelete || isDeleting) return;
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      await onDelete(article.id);
+    } finally {
+      setIsDeleting(false);
+      setConfirmDelete(false);
     }
   };
 
@@ -135,21 +154,42 @@ export default function NewsCard({ article, onAddToKnowledgeBase }: NewsCardProp
           )}
         </div>
 
-        <button
-          onClick={handleAdd}
-          disabled={article.is_in_knowledge_base || isAdding}
-          className="inline-flex items-center gap-1.5 rounded-md bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:bg-green-50 disabled:text-green-700">
-          {article.is_in_knowledge_base ? (
-            <BookCheck className="h-4 w-4" />
-          ) : (
-            <BookPlus className="h-4 w-4" />
+        <div className="flex items-center gap-2">
+          {onDelete && (
+            <button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                confirmDelete
+                  ? "bg-red-100 text-red-700 hover:bg-red-200"
+                  : "bg-gray-50 text-gray-500 hover:bg-red-50 hover:text-red-600"
+              } disabled:opacity-50`}
+            >
+              <Trash2 className="h-4 w-4" />
+              {isDeleting ? "删除中..." : confirmDelete ? "确认删除" : "删除"}
+            </button>
           )}
+
+          <button
+            onClick={handleAdd}
+            disabled={article.is_in_knowledge_base || isAdding}
+            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+              article.is_in_knowledge_base
+                ? "cursor-default bg-green-50 text-green-700"
+                : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+            }`}>
+            {article.is_in_knowledge_base ? (
+              <BookCheck className="h-4 w-4" />
+            ) : (
+              <BookPlus className="h-4 w-4" />
+            )}
           {isAdding
             ? "添加中..."
             : article.is_in_knowledge_base
             ? "已在库中"
             : "加入知识库"}
         </button>
+        </div>
       </div>
 
       {expanded && article.content && (

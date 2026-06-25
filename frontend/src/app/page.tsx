@@ -1,36 +1,26 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   RefreshCw,
-  Wifi,
   WifiOff,
-  CheckCircle2,
-  AlertCircle,
-  BookPlus,
-  BookCheck,
+  Trash2,
 } from "lucide-react";
 import SearchBar from "@/components/SearchBar";
 import NewsCard from "@/components/NewsCard";
 import SchedulerPanel from "@/components/SchedulerPanel";
+import CrawlPanel from "@/components/CrawlPanel";
 import LLMConfigAlert from "@/components/LLMConfigAlert";
 import {
   fetchArticles,
-  triggerCrawl,
   fetchArticleStats,
-  createCrawlWebSocket,
   addArticleToKnowledgeBase,
+  deleteArticle,
+  deleteAllArticles,
   type Article,
   type ArticleStats,
 } from "@/lib/api";
 import { isLLMConfigError } from "@/lib/errors";
-
-interface CrawlProgress {
-  current: string;
-  processed: number;
-  total: number;
-  status: string;
-}
 
 export default function HomePage() {
   // 文章列表状态
@@ -46,17 +36,12 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  // 爬取状态
-  const [crawling, setCrawling] = useState(false);
-  const [crawlProgress, setCrawlProgress] = useState<CrawlProgress | null>(null);
-  const [crawlComplete, setCrawlComplete] = useState<{
-    total_new: number;
-    total_summarized: number;
-  } | null>(null);
-  const [crawlError, setCrawlError] = useState<string | null>(null);
-  const [crawlLlmConfigError, setCrawlLlmConfigError] = useState(false);
+  // LLM 配置错误状态
   const [kbLlmConfigError, setKbLlmConfigError] = useState(false);
-  const wsRef = useRef<WebSocket | null>(null);
+
+  // 清空所有文章状态
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   // 加载文章列表
   const loadArticles = useCallback(
@@ -76,6 +61,16 @@ export default function HomePage() {
     [searchQuery, statusFilter]
   );
 
+  // 加载统计数据
+  const loadStats = useCallback(async () => {
+    try {
+      const data = await fetchArticleStats();
+      setStats(data);
+    } catch (err) {
+      console.error("加载统计失败:", err);
+    }
+  }, []);
+
   // 添加到知识库
   const handleAddToKnowledgeBase = useCallback(async (articleId: number) => {
     setKbLlmConfigError(false);
@@ -88,6 +83,9 @@ export default function HomePage() {
             : article
         )
       );
+      // 刷新列表和统计，以获取后端自动生成的摘要等最新数据
+      loadArticles(currentPage);
+      loadStats();
     } catch (error) {
       console.error("添加到知识库失败:", error);
       if (isLLMConfigError(error)) {
@@ -96,17 +94,48 @@ export default function HomePage() {
         alert((error as Error).message);
       }
     }
-  }, []);
+  }, [loadArticles, currentPage, loadStats]);
 
-  // 加载统计数据
-  const loadStats = useCallback(async () => {
+  // 删除单篇文章
+  const handleDelete = useCallback(async (articleId: number) => {
     try {
-      const data = await fetchArticleStats();
-      setStats(data);
-    } catch (err) {
-      console.error("加载统计失败:", err);
+      await deleteArticle(articleId);
+      // 从本地列表中移除
+      setArticles((prev) => prev.filter((a) => a.id !== articleId));
+      loadStats();
+      // 如果当前页删空了，回到上一页
+      if (articles.length <= 1 && currentPage > 1) {
+        loadArticles(currentPage - 1);
+      } else {
+        loadArticles(currentPage);
+      }
+    } catch (error) {
+      console.error("删除文章失败:", error);
+      alert((error as Error).message);
     }
-  }, []);
+  }, [articles.length, currentPage, loadArticles, loadStats]);
+
+  // 清空所有文章
+  const handleDeleteAll = useCallback(async () => {
+    if (!confirmDeleteAll) {
+      setConfirmDeleteAll(true);
+      return;
+    }
+    setDeletingAll(true);
+    try {
+      await deleteAllArticles();
+      setArticles([]);
+      setConfirmDeleteAll(false);
+      setCurrentPage(1);
+      loadArticles(1);
+      loadStats();
+    } catch (error) {
+      console.error("清空文章失败:", error);
+      alert((error as Error).message);
+    } finally {
+      setDeletingAll(false);
+    }
+  }, [confirmDeleteAll, loadArticles, loadStats]);
 
   // 初始加载
   useEffect(() => {
@@ -143,73 +172,11 @@ export default function HomePage() {
     [totalPages, loadArticles]
   );
 
-  // 清理 WebSocket
-  useEffect(() => {
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, []);
-
-  // 触发爬取
-  const handleCrawl = useCallback(async () => {
-    if (crawling) return;
-
-    setCrawling(true);
-    setCrawlProgress(null);
-    setCrawlComplete(null);
-    setCrawlError(null);
-    setCrawlLlmConfigError(false);
-
-    try {
-      await triggerCrawl();
-
-      // 建立 WebSocket 连接跟踪进度
-      const ws = createCrawlWebSocket(
-        (msg) => {
-          switch (msg.type) {
-            case "progress":
-              setCrawlProgress(msg.data as unknown as CrawlProgress);
-              break;
-            case "complete":
-              setCrawlComplete(
-                msg.data as unknown as {
-                  total_new: number;
-                  total_summarized: number;
-                }
-              );
-              setCrawlProgress(null);
-              setCrawling(false);
-              // 刷新列表和统计
-              loadArticles(currentPage);
-              loadStats();
-              break;
-            case "error": {
-              const message = (msg.data as { message: string }).message;
-              setCrawlError(message);
-              setCrawlLlmConfigError(message.includes("请配置大模型密钥"));
-              setCrawlProgress(null);
-              setCrawling(false);
-              break;
-            }
-          }
-        },
-        () => {
-          console.log("WebSocket 已连接");
-        },
-        () => {
-          setCrawling(false);
-        }
-      );
-
-      wsRef.current = ws;
-    } catch (err) {
-      console.error("触发爬取失败:", err);
-      setCrawlError("触发爬取失败，请稍后重试");
-      setCrawling(false);
-    }
-  }, [crawling, currentPage, loadArticles, loadStats]);
+  // 爬取完成后刷新数据
+  const handleCrawlComplete = useCallback(() => {
+    loadArticles(currentPage);
+    loadStats();
+  }, [loadArticles, currentPage, loadStats]);
 
   // 生成分页按钮
   const renderPagination = () => {
@@ -289,84 +256,46 @@ export default function HomePage() {
         ))}
       </div>
 
-      {/* ---- 搜索栏 + 手动爬取按钮 ---- */}
+      {/* ---- 搜索栏 ---- */}
       <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex-1">
-            <SearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              onSearch={handleSearch}
-              statusFilter={statusFilter}
-              onStatusChange={handleStatusChange}
-            />
-          </div>
-          <button
-            onClick={handleCrawl}
-            disabled={crawling}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <RefreshCw className={`h-4 w-4 ${crawling ? "animate-spin" : ""}`} />
-            {crawling ? "爬取中..." : "手动爬取"}
-          </button>
-        </div>
+        <SearchBar
+          value={searchQuery}
+          onChange={setSearchQuery}
+          onSearch={handleSearch}
+          statusFilter={statusFilter}
+          onStatusChange={handleStatusChange}
+        />
       </div>
 
-      {/* ---- 爬取进度面板 ---- */}
-      {(crawlProgress || crawlComplete || crawlError) && (
-        <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-          <div className="mb-3 flex items-center gap-2">
-            {crawlError ? (
-              <AlertCircle className="h-5 w-5 text-red-500" />
-            ) : crawlComplete ? (
-              <CheckCircle2 className="h-5 w-5 text-green-500" />
-            ) : (
-              <Wifi className="h-5 w-5 text-blue-500 animate-pulse" />
-            )}
-            <h3 className="text-sm font-semibold text-gray-900">
-              {crawlError ? "爬取出错" : crawlComplete ? "爬取完成" : "爬取进度"}
-            </h3>
-          </div>
-
-          {crawlProgress && (
-            <div className="space-y-3">
-              <p className="text-sm text-gray-600">
-                当前处理: <span className="font-medium text-gray-900">{crawlProgress.current}</span>
-              </p>
-              <p className="text-xs text-gray-500">
-                已处理 {crawlProgress.processed} / {crawlProgress.total}
-              </p>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                <div
-                  className="h-full rounded-full bg-blue-500 transition-all duration-500"
-                  style={{
-                    width: `${crawlProgress.total > 0 ? (crawlProgress.processed / crawlProgress.total) * 100 : 0}%`,
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          {crawlComplete && (
-            <div className="space-y-1 text-sm text-gray-600">
-              <p>
-                新增文章: <span className="font-semibold text-gray-900">{crawlComplete.total_new}</span> 篇
-              </p>
-              <p>
-                已生成摘要: <span className="font-semibold text-gray-900">{crawlComplete.total_summarized}</span> 篇
-              </p>
-            </div>
-          )}
-
-          {crawlLlmConfigError ? (
-            <LLMConfigAlert message={crawlError ?? undefined} />
-          ) : (
-            crawlError && <p className="text-sm text-red-600">{crawlError}</p>
-          )}
-        </div>
-      )}
+      {/* ---- 手动爬取面板 ---- */}
+      <CrawlPanel onCrawlComplete={handleCrawlComplete} />
 
       {kbLlmConfigError && <LLMConfigAlert />}
+
+      {/* ---- 文章列表工具栏 ---- */}
+      {articles.length > 0 && !loading && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500">
+            共 {stats?.total ?? 0} 篇文章
+          </p>
+          <button
+            onClick={handleDeleteAll}
+            disabled={deletingAll}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 ${
+              confirmDeleteAll
+                ? "bg-red-600 text-white hover:bg-red-700"
+                : "border border-red-200 bg-white text-red-600 hover:bg-red-50"
+            }`}
+          >
+            <Trash2 className="h-4 w-4" />
+            {deletingAll
+              ? "清空中..."
+              : confirmDeleteAll
+              ? "确认清空所有文章？"
+              : "清空所有文章"}
+          </button>
+        </div>
+      )}
 
       {/* ---- 新闻卡片网格 ---- */}
       {loading && articles.length === 0 ? (
@@ -387,6 +316,7 @@ export default function HomePage() {
               key={article.id}
               article={article}
               onAddToKnowledgeBase={handleAddToKnowledgeBase}
+              onDelete={handleDelete}
             />
           ))}
         </div>

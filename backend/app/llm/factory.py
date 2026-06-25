@@ -25,7 +25,7 @@ async def get_llm_config_from_db():
 def get_chat_model(config: LLMConfig):
     """根据配置返回对应的 ChatModel 实例"""
     validate_llm_config(config)
-    if config.provider in ["openai", "dashscope", "ollama"]:
+    if config.provider in ["openai", "dashscope", "siliconflow", "ollama"]:
         kwargs = {
             "model": config.chat_model,
             "api_key": config.api_key or "ollama", # ollama不需要key
@@ -39,7 +39,7 @@ def get_chat_model(config: LLMConfig):
 def get_embedding_model(config: LLMConfig):
     """根据配置返回对应的 Embedding 实例"""
     validate_llm_config(config, for_embedding=True)
-    if config.provider in ["openai", "dashscope", "ollama"]:
+    if config.provider in ["openai", "dashscope", "siliconflow", "ollama"]:
         kwargs = {
             "api_key": config.api_key or "ollama",
         }

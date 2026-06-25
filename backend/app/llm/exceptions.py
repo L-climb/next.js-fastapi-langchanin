@@ -5,7 +5,6 @@ LLM 服务异常处理
 
 LLM_CONFIG_MESSAGE = "请配置大模型密钥，包括 Embedding 模型"
 
-
 class LLMServiceError(Exception):
     """大模型 / Embedding 服务不可用"""
 
@@ -39,12 +38,17 @@ def validate_llm_config(config, *, for_embedding: bool = False) -> None:
 
 
 def wrap_llm_error(exc: Exception, *, model_type: str = "chat") -> LLMServiceError:
-    """将底层异常转换为用户可理解的 LLM 错误"""
+    """将底层异常转换为用户可理解的 LLM 错误，保留原始错误信息"""
     if isinstance(exc, LLMServiceError):
         return exc
 
-    err_str = str(exc).lower()
+    err_msg = str(exc)
+    err_str = err_msg.lower()
     err_type = type(exc).__name__.lower()
+
+    # 截断过长的错误信息
+    if len(err_msg) > 300:
+        err_msg = err_msg[:300] + "..."
 
     config_indicators = (
         "401",
@@ -73,15 +77,18 @@ def wrap_llm_error(exc: Exception, *, model_type: str = "chat") -> LLMServiceErr
         "apiconnectionerror",
         "rate limit",
         "insufficient_quota",
-        "embedding",
     )
 
     if any(ind in err_str or ind in err_type for ind in config_indicators):
-        return LLMServiceError(model_type=model_type)
+        label = "Embedding 模型" if model_type == "embedding" else "大模型"
+        return LLMServiceError(
+            message=f"{label}调用失败: {err_msg}",
+            model_type=model_type,
+        )
 
     label = "Embedding 模型" if model_type == "embedding" else "大模型"
     return LLMServiceError(
-        message=f"{label}调用失败，{LLM_CONFIG_MESSAGE}",
+        message=f"{label}调用失败: {err_msg}",
         model_type=model_type,
         error_code="LLM_CALL_FAILED",
     )

@@ -13,13 +13,14 @@ from apscheduler.triggers.interval import IntervalTrigger
 from sqlalchemy import select
 
 from app.config import settings
-from app.crawler.rss_crawler import crawl_all_sources
+from app.crawler.rss_crawler import crawl_all_sources, crawl_selected_sources
 from app.crawler.web_scraper import extract_content
 from app.database import async_session
 from app.knowledge.vectorstore import add_to_knowledge_base
 from app.llm.exceptions import LLMServiceError
-from app.llm.summarizer import summarize_article
+from app.llm.summarizer import summarize_article, filter_articles_by_topic
 from app.models.article import Article
+from app.models.crawl_source import CrawlSource
 from app.websocket_manager import ws_manager
 
 logger = logging.getLogger(__name__)
@@ -81,15 +82,18 @@ async def process_single_article(article_data: dict, db_session) -> bool:
             article.summarized_at = datetime.utcnow()
             article.status = "summarized"
 
-            # 4. 存入知识库
-            await add_to_knowledge_base(
-                article_id=article.id,
-                title=title,
-                summary=result["summary"],
-                points=result["points"],
-                impact=result["impact"],
-            )
-            article.is_in_knowledge_base = True
+            # 4. 存入知识库（单独捕获异常，确保摘要数据不会因知识库失败而丢失）
+            try:
+                await add_to_knowledge_base(
+                    article_id=article.id,
+                    title=title,
+                    summary=result["summary"],
+                    points=result["points"],
+                    impact=result["impact"],
+                )
+                article.is_in_knowledge_base = True
+            except Exception as kb_error:
+                logger.warning(f"知识库存储失败 [{title[:30]}...]: {kb_error}，摘要已保存")
         else:
             article.status = "failed"
 
@@ -104,32 +108,80 @@ async def process_single_article(article_data: dict, db_session) -> bool:
         return False
 
 
-async def scheduled_crawl():
-    """定时爬取任务（支持 WebSocket 进度推送）"""
+async def scheduled_crawl(
+    source_ids: list[int] | None = None,
+    max_count: int | None = None,
+    topic: str | None = None,
+):
+    """定时爬取任务（支持 WebSocket 进度推送和主题过滤）"""
     logger.info("=" * 50)
-    logger.info("开始定时爬取任务...")
+    logger.info("开始爬取任务...")
 
     total_new = 0
     total_summarized = 0
 
     try:
-        # 1. 爬取所有源
-        articles = await crawl_all_sources()
+        # 1. 确定要爬取的源
+        async with async_session() as db:
+            if source_ids:
+                result = await db.execute(
+                    select(CrawlSource).where(CrawlSource.id.in_(source_ids))
+                )
+            else:
+                result = await db.execute(select(CrawlSource))
+            sources = result.scalars().all()
+
+        if not sources:
+            logger.info("没有可用的爬取源")
+            await ws_manager.send_complete(0, 0)
+            return
+
+        source_dicts = [s.to_dict() for s in sources]
+
+        # 2. 爬取指定源
+        articles = await crawl_selected_sources(source_dicts)
         if not articles:
             logger.info("没有获取到新文章")
             await ws_manager.send_complete(0, 0)
             return
 
-        # 2. 过滤已存在的文章
+        # 3. 过滤已存在的文章
         async with async_session() as db:
             result = await db.execute(select(Article.url))
             existing_urls = {row[0] for row in result.fetchall()}
 
             new_articles = [a for a in articles if a["url"] not in existing_urls]
-            total = len(new_articles)
-            logger.info(f"新增 {total} 篇文章（过滤 {len(articles) - total} 篇已存在）")
 
-            # 3-6. 逐篇处理（提取正文、摘要、存入知识库）
+            # 按主题过滤
+            if topic and topic.strip():
+                await ws_manager.send_progress(
+                    current=f"正在按主题「{topic}」筛选文章...",
+                    processed=0,
+                    total=len(new_articles),
+                )
+                new_articles = await filter_articles_by_topic(new_articles, topic.strip())
+                logger.info(f"主题「{topic}」过滤后剩余 {len(new_articles)} 篇")
+
+            if not new_articles:
+                logger.info("过滤后没有新文章")
+                await ws_manager.send_complete(0, 0)
+                return
+
+            # 按源限制爬取数量
+            if max_count:
+                count_per_source: dict[str, int] = {}
+                filtered = []
+                for a in new_articles:
+                    src = a.get("source_name", "")
+                    count_per_source[src] = count_per_source.get(src, 0) + 1
+                    if count_per_source[src] <= max_count:
+                        filtered.append(a)
+                new_articles = filtered
+
+            total = len(new_articles)
+            logger.info(f"新增 {total} 篇文章（过滤 {len(articles) - total} 篇已存在/不相关）")
+
+            # 4. 逐篇处理（提取正文、摘要、存入知识库）
             processed = 0
             for article_data in new_articles:
                 # 推送进度
@@ -161,7 +213,7 @@ async def scheduled_crawl():
             logger.info(f"爬取任务完成，成功处理 {total_new}/{total} 篇文章")
 
     except Exception as e:
-        logger.error(f"定时爬取任务异常: {e}")
+        logger.error(f"爬取任务异常: {e}")
         await ws_manager.send_error(str(e))
 
     # 推送完成消息
@@ -169,28 +221,12 @@ async def scheduled_crawl():
     logger.info("=" * 50)
 
 
-def start_scheduler(interval_minutes: int = None):
+def start_scheduler():
     """
-    启动定时调度器
-
-    Args:
-        interval_minutes: 爬取间隔（分钟），默认使用配置值
+    启动定时调度器（不自动添加爬取任务，用户需手动添加）
     """
-    if interval_minutes is None:
-        interval_minutes = settings.CRAWL_INTERVAL_MINUTES
-
-    # 添加定时爬取任务
-    scheduler.add_job(
-        scheduled_crawl,
-        trigger=IntervalTrigger(minutes=interval_minutes),
-        id="scheduled_crawl",
-        name="定时新闻爬取",
-        replace_existing=True,
-        max_instances=1,  # 防止任务重叠
-    )
-
     scheduler.start()
-    logger.info(f"定时调度器已启动，爬取间隔: {interval_minutes} 分钟")
+    logger.info("定时调度器已启动（未添加默认任务，可通过面板手动添加）")
 
 
 def get_jobs() -> list[dict]:

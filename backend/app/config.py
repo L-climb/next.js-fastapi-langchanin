@@ -12,11 +12,11 @@ class Settings(BaseSettings):
     # 数据库配置
     DATABASE_URL: str = "sqlite+aiosqlite:///./news.db"
 
-    # ChromaDB 配置
-    CHROMADB_PATH: str = "./chroma_data"
+    # 向量数据库配置（FAISS）
+    FAISS_PATH: str = "./faiss_data"
 
     # LLM 配置
-    LLM_PROVIDER: str = "openai"  # openai / dashscope / ollama
+    LLM_PROVIDER: str = "openai"  # openai / dashscope / ollama / siliconflow
     OPENAI_API_KEY: str = ""
     OPENAI_BASE_URL: str = ""  # 可选，用于兼容其他 OpenAI 接口
     LLM_MODEL: str = "gpt-4o-mini"

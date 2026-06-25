@@ -1,6 +1,6 @@
 """
 知识库路由
-提供语义搜索和 RAG 问答接口
+提供语义搜索、RAG 问答、文档列表和详情接口
 """
 
 import logging
@@ -8,7 +8,12 @@ import logging
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from app.knowledge.vectorstore import get_knowledge_stats, search_knowledge_base
+from app.knowledge.vectorstore import (
+    get_knowledge_stats,
+    search_knowledge_base,
+    list_knowledge_documents,
+    get_knowledge_document,
+)
 from app.llm.exceptions import LLMServiceError
 from app.llm.summarizer import answer_question
 
@@ -50,6 +55,37 @@ class KnowledgeStatsResponse(BaseModel):
     """知识库统计响应"""
     total_documents: int
     collection_name: str
+
+
+class DocumentChunk(BaseModel):
+    """文档切块"""
+    chunk_type: str
+    content: str
+
+
+class DocumentListItem(BaseModel):
+    """文档列表项"""
+    article_id: int | None = None
+    title: str
+    doc_id: str
+
+
+class DocumentListResponse(BaseModel):
+    """文档列表响应"""
+    items: list[DocumentListItem]
+    total: int
+    page: int
+    size: int
+    pages: int
+
+
+class DocumentDetailResponse(BaseModel):
+    """文档详情响应"""
+    article_id: int | None = None
+    title: str
+    doc_id: str
+    document: str
+    chunks: list[DocumentChunk]
 
 
 # ==================== 路由处理 ====================
@@ -115,3 +151,36 @@ async def knowledge_stats():
     """获取知识库统计信息"""
     stats = await get_knowledge_stats()
     return KnowledgeStatsResponse(**stats)
+
+
+@router.get("/documents", response_model=DocumentListResponse)
+async def list_documents(
+    page: int = Query(1, ge=1, description="页码"),
+    size: int = Query(20, ge=1, le=100, description="每页数量"),
+):
+    """分页列出知识库中的所有文档"""
+    try:
+        result = await list_knowledge_documents(page=page, size=size)
+        return DocumentListResponse(**result)
+    except LLMServiceError:
+        raise
+    except Exception as e:
+        logger.error(f"获取知识库文档列表失败: {e}")
+        raise HTTPException(status_code=500, detail=f"获取文档列表失败: {str(e)}")
+
+
+@router.get("/documents/{article_id}", response_model=DocumentDetailResponse)
+async def get_document(article_id: int):
+    """获取知识库中指定文章的详细信息（含切块）"""
+    try:
+        result = await get_knowledge_document(article_id=article_id)
+        if result is None:
+            raise HTTPException(status_code=404, detail="文档不存在")
+        return DocumentDetailResponse(**result)
+    except HTTPException:
+        raise
+    except LLMServiceError:
+        raise
+    except Exception as e:
+        logger.error(f"获取知识库文档详情失败: {e}")
+        raise HTTPException(status_code=500, detail=f"获取文档详情失败: {str(e)}")

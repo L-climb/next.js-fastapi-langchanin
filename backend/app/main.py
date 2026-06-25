@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse
 from app.config import settings
 from app.database import init_db
 from app.llm.exceptions import LLMServiceError
-from app.routers import articles, knowledge, scheduler, config
+from app.routers import articles, knowledge, scheduler, config, sources
 from app.scheduler.tasks import start_scheduler
 from app.websocket_manager import ws_manager
 
@@ -73,6 +73,7 @@ app.include_router(articles.router)
 app.include_router(knowledge.router)
 app.include_router(scheduler.router)
 app.include_router(config.router)
+app.include_router(sources.router)
 
 
 @app.exception_handler(LLMServiceError)
@@ -100,6 +101,7 @@ async def root():
             "articles": "/api/articles",
             "knowledge": "/api/knowledge",
             "scheduler": "/api/scheduler",
+            "sources": "/api/sources",
         },
     }
 

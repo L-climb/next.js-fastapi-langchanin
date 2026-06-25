@@ -54,6 +54,7 @@ async def init_db():
     # 导入模型以确保它们被注册
     from app.models.article import Article  # noqa: F401
     from app.models.config import LLMConfig  # noqa: F401
+    from app.models.crawl_source import CrawlSource  # noqa: F401
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -67,3 +68,16 @@ async def init_db():
                     "ALTER TABLE articles ADD COLUMN is_in_knowledge_base BOOLEAN NOT NULL DEFAULT 0"
                 )
             )
+
+        # 预置 RSS 源数据（仅表为空时执行）
+        count_result = await conn.execute(text("SELECT COUNT(*) FROM crawl_sources"))
+        if count_result.scalar() == 0:
+            from app.crawler.sources import NEWS_SOURCES
+            for src in NEWS_SOURCES:
+                await conn.execute(
+                    text(
+                        "INSERT INTO crawl_sources (name, url, category, is_preset) "
+                        "VALUES (:name, :url, :category, 1)"
+                    ),
+                    {"name": src["name"], "url": src["rss"], "category": src.get("category", "ai")},
+                )
